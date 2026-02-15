@@ -1,0 +1,7 @@
+{
+  "name": "AquaVigo - Sistema de Monitorización de Traídas",
+  "description": "Una plataforma integral para la monitorización en tiempo real de la calidad del agua en depósitos vecinales, diseñada para prevenir riesgos sanitarios tras incendios forestales mediante sensores NB-IoT.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
