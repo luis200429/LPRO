@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   ChevronLeft, 
   History, 
@@ -28,10 +27,45 @@ interface TankDetailsProps {
 }
 
 const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
-  const chartData = tank.history.map(h => ({
-    ...h,
-    time: new Date(h.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  }));
+  const [timeRange, setTimeRange] = useState<'24h' | '7d'>('24h');
+
+  const chartData = useMemo(() => {
+    if (!tank.history) return [];
+
+    const now = new Date().getTime();
+    const cutoffTime = timeRange === '24h' 
+      ? now - (24 * 60 * 60 * 1000) 
+      : now - (7 * 24 * 60 * 60 * 1000);
+
+    return [...tank.history]
+      // 🔥 Ordenamos estrictamente por tu timestamp
+      .sort((a: any, b: any) => {
+        const timeA = String(a.timestamp).length === 10 ? a.timestamp * 1000 : a.timestamp;
+        const timeB = String(b.timestamp).length === 10 ? b.timestamp * 1000 : b.timestamp;
+        return timeA - timeB; // Ascendente
+      })
+      .map((h: any) => {
+        // 🔥 Usamos solo tu timestamp para generar la fecha real
+        const timeVal = String(h.timestamp).length === 10 ? h.timestamp * 1000 : h.timestamp;
+        const dateObj = new Date(timeVal);
+        
+        let timeString = '';
+        if (timeRange === '24h') {
+          timeString = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } else {
+          const day = new Intl.DateTimeFormat('es-ES', { weekday: 'short' }).format(dateObj);
+          const time = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          timeString = `${day} ${time}`;
+        }
+
+        return {
+          ...h,
+          rawTime: dateObj.getTime(),
+          time: timeString
+        };
+      })
+      .filter((h: any) => h.rawTime >= cutoffTime);
+  }, [tank.history, timeRange]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -44,7 +78,6 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
       </button>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Info and Live Stats */}
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
             <h2 className="text-2xl font-bold text-slate-900 mb-2">{tank.name}</h2>
@@ -69,21 +102,21 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
                   <Zap className="text-amber-500" />
                   <span className="text-sm font-medium">Voltaje Batería</span>
                 </div>
-                <span className="text-sm font-bold text-slate-700">{tank.lastReading.battery} V</span>
+                <span className="text-sm font-bold text-slate-700">{tank.lastReading?.battery || '0'} V</span>
               </div>
               <div className="flex justify-between items-center p-3 rounded-2xl bg-slate-50 border border-slate-100">
                 <div className="flex items-center space-x-3">
                   <Gauge className="text-purple-500" />
                   <span className="text-sm font-medium">TDS (Conductividad)</span>
                 </div>
-                <span className="text-sm font-bold text-slate-700">{tank.lastReading.tds} ppm</span>
+                <span className="text-sm font-bold text-slate-700">{tank.lastReading?.tds || '0'} ppm</span>
               </div>
               <div className="flex justify-between items-center p-3 rounded-2xl bg-slate-50 border border-slate-100">
                 <div className="flex items-center space-x-3">
                   <Droplet className="text-cyan-500" />
                   <span className="text-sm font-medium">Caudal Actual</span>
                 </div>
-                <span className="text-sm font-bold text-slate-700">{tank.lastReading.flow} L/min</span>
+                <span className="text-sm font-bold text-slate-700">{tank.lastReading?.flow || '0'} L/min</span>
               </div>
             </div>
           </div>
@@ -100,20 +133,24 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
           </div>
         </div>
 
-        {/* Right Column: Historical Charts */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Turbidity Chart */}
           <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-2">
                 <History className="w-5 h-5 text-slate-400" />
                 <h3 className="font-bold text-slate-800">Histórico de Turbidez (NTU)</h3>
               </div>
-              <select className="bg-slate-50 border rounded-lg text-xs font-medium px-2 py-1 outline-none">
-                <option>Últimas 24h</option>
-                <option>Última semana</option>
+              
+              <select 
+                value={timeRange}
+                onChange={(e) => setTimeRange(e.target.value as '24h' | '7d')}
+                className="bg-slate-50 border rounded-lg text-xs font-medium px-2 py-1 outline-none cursor-pointer hover:bg-slate-100 transition-colors"
+              >
+                <option value="24h">Últimas 24h</option>
+                <option value="7d">Última semana</option>
               </select>
             </div>
+            
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData}>
@@ -135,7 +172,6 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
             </div>
           </div>
 
-          {/* pH Chart */}
           <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
              <div className="flex items-center space-x-2 mb-6">
                 <History className="w-5 h-5 text-slate-400" />
@@ -150,11 +186,12 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
                   <Tooltip 
                     contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                   />
-                  <Line type="monotone" dataKey="ph" stroke="#8b5cf6" strokeWidth={3} dot={false} />
+                  <Line type="monotone" dataKey="ph" stroke="#8b5cf6" strokeWidth={3} dot={{ stroke: '#8b5cf6', strokeWidth: 2, r: 4, fill: '#fff' }} activeDot={{ r: 6 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
+          
         </div>
       </div>
     </div>

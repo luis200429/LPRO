@@ -1,17 +1,9 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  LayoutDashboard, 
-  Map as MapIcon, 
-  Bell, 
-  MessageSquare, 
-  AlertTriangle, 
-  Settings, 
-  Droplets,
-  Menu,
-  X,
-  User
+  LayoutDashboard, Map as MapIcon, Bell, MessageSquare, 
+  AlertTriangle, Droplets, Wifi
 } from 'lucide-react';
+import { io } from 'socket.io-client';
 import Dashboard from './components/Dashboard';
 import MapView from './components/MapView';
 import GeminiChat from './components/GeminiChat';
@@ -19,35 +11,105 @@ import UserReports from './components/UserReports';
 import TankDetails from './components/TankDetails';
 import { WaterTank } from './types';
 import { MOCK_TANKS } from './constants';
-import logoAuga from './fotos/logo.png'; // O la ruta donde guardes la imagen
+
+const BACKEND_URL = 'http://34.73.211.235:3000';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'map' | 'chat' | 'reports'>('dashboard');
-  const [selectedTank, setSelectedTank] = useState<WaterTank | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [tanks, setTanks] = useState<WaterTank[]>(MOCK_TANKS);
+  const [selectedTankId, setSelectedTankId] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
 
-  const criticalCount = useMemo(() => 
-    MOCK_TANKS.filter(t => t.status === 'critical').length, 
-  []);
+  const selectedTank = useMemo(() => 
+    tanks.find(t => t.id === selectedTankId) || null, 
+  [tanks, selectedTankId]);
 
-  const renderContent = () => {
-    if (selectedTank) {
-      return <TankDetails tank={selectedTank} onBack={() => setSelectedTank(null)} />;
-    }
+  // Carga inicial masiva y ORDENADA de InfluxDB
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      console.log('📡 Iniciando carga masiva de datos desde InfluxDB...');
+      try {
+        const updatedTanks = await Promise.all(
+          MOCK_TANKS.map(async (tank) => {
+            try {
+              const response = await fetch(`${BACKEND_URL}/api/historico/${tank.id}`);
+              if (response.ok) {
+                const historico = await response.json();
+                
+                // 🔥 Ordenamos forzosamente de más reciente a más antiguo
+                const sortedHistorico = historico.sort((a: any, b: any) => {
+                  const timeA = String(a.timestamp).length === 10 ? a.timestamp * 1000 : a.timestamp;
+                  const timeB = String(b.timestamp).length === 10 ? b.timestamp * 1000 : b.timestamp;
+                  return timeB - timeA; // Descendente (el más nuevo en [0])
+                });
 
-    switch (activeTab) {
-      case 'dashboard':
-        return <Dashboard tanks={MOCK_TANKS} onSelectTank={setSelectedTank} />;
-      case 'map':
-        return <MapView tanks={MOCK_TANKS} onSelectTank={setSelectedTank} />;
-      case 'chat':
-        return <GeminiChat tanks={MOCK_TANKS} />;
-      case 'reports':
-        return <UserReports tanks={MOCK_TANKS} />;
-      default:
-        return <Dashboard tanks={MOCK_TANKS} onSelectTank={setSelectedTank} />;
-    }
+                return { ...tank, history: sortedHistorico };
+              }
+            } catch (err) {
+              console.error(`❌ Error cargando el tanque ${tank.id}:`, err);
+            }
+            return tank;
+          })
+        );
+        
+        setTanks(updatedTanks);
+        console.log('✅ Carga inicial completada con éxito');
+      } catch (error) {
+        console.error('❌ Error global en la carga inicial:', error);
+      }
+    };
+
+    fetchInitialData();
+  }, []);
+
+  // Conexión Socket.io para Tiempo Real
+  useEffect(() => {
+    const socket = io(BACKEND_URL);
+
+    socket.on('connect', () => {
+      console.log('✅ Conectado al Backend por Socket en:', BACKEND_URL);
+      setIsConnected(true);
+    });
+
+    socket.on('actualizacion_sensores', (data: { comunidad: string, datos: any, timestamp: string }) => {
+      setTanks(currentTanks => currentTanks.map(tank => {
+        if (tank.id === data.comunidad) {
+          
+          let status: 'optimal' | 'warning' | 'critical' = 'optimal';
+          if (data.datos.turbidity > 10) status = 'critical';
+          else if (data.datos.turbidity > 5) status = 'warning';
+
+          const newReading = { ...data.datos, timestamp: data.timestamp };
+
+          return {
+            ...tank,
+            status,
+            lastReading: newReading,
+            history: tank.history 
+          };
+        }
+        return tank;
+      }));
+    });
+
+    socket.on('disconnect', () => {
+      console.warn('❌ Desconectado del servidor');
+      setIsConnected(false);
+    });
+
+    socket.on('connect_error', (err) => {
+      console.error('⚠️ Error de conexión Socket:', err.message);
+      setIsConnected(false);
+    });
+
+    return () => { socket.disconnect(); };
+  }, []);
+
+  const handleSelectTank = (tank: WaterTank) => {
+    setSelectedTankId(tank.id);
   };
+
+  const criticalCount = useMemo(() => tanks.filter(t => t.status === 'critical').length, [tanks]);
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -58,30 +120,20 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
-      {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 shadow-sm">
-        
-        {/* CAMBIO AQUÍ: Reemplazamos icono y texto por la imagen */}
-        <div className="p-6 flex items-center justify-center">
-          <img 
-            src={logoAuga} 
-            alt="Auga Calidade" 
-            className="w-full h-auto max-h-16 object-contain" 
-          />
+        <div className="p-6 flex items-center space-x-2">
+          <Droplets className="w-8 h-8 text-blue-600" />
+          <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
+            AquaVigo
+          </span>
         </div>
-        
         <nav className="flex-1 px-4 space-y-1">
           {navItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => {
-                setActiveTab(item.id as any);
-                setSelectedTank(null);
-              }}
+              onClick={() => { setActiveTab(item.id as any); setSelectedTankId(null); }}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${
-                activeTab === item.id && !selectedTank
-                  ? 'bg-blue-50 text-blue-600'
-                  : 'text-slate-600 hover:bg-slate-50'
+                activeTab === item.id && !selectedTank ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50'
               }`}
             >
               <item.icon className="w-5 h-5" />
@@ -89,85 +141,41 @@ const App: React.FC = () => {
             </button>
           ))}
         </nav>
-
-        <div className="p-4 border-t border-slate-200">
-          <div className="flex items-center space-x-3 px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg cursor-pointer">
-            <User className="w-5 h-5" />
-            <span className="font-medium text-sm">Comunidad de Montes</span>
+        <div className="p-4 border-t">
+          <div className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${isConnected ? 'text-emerald-600 bg-emerald-50' : 'text-red-600 bg-red-50'}`}>
+            <Wifi className={`w-4 h-4 ${isConnected ? 'animate-pulse' : ''}`} />
+            <span>{isConnected ? 'SISTEMA EN VIVO' : 'CONEXIÓN FALLIDA'}</span>
           </div>
         </div>
       </aside>
 
-      {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b z-50 flex items-center justify-between px-4 h-16">
-        
-        {/* CAMBIO AQUÍ: Reemplazamos icono y texto 'AquaVigo' por la imagen */}
-        <div className="flex items-center">
-           <img 
-            src={logoAuga} 
-            alt="Auga Calidade" 
-            className="h-10 w-auto object-contain" 
-          />
-        </div>
-
-        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
-          {isSidebarOpen ? <X /> : <Menu />}
-        </button>
-      </div>
-      
-      {/* Mobile Nav Overlay */}
-      {isSidebarOpen && (
-        <div className="md:hidden fixed inset-0 bg-black/50 z-40" onClick={() => setIsSidebarOpen(false)}>
-          <div className="absolute right-0 top-0 bottom-0 w-64 bg-white p-6 pt-20" onClick={e => e.stopPropagation()}>
-            <nav className="space-y-4">
-              {navItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setActiveTab(item.id as any);
-                    setSelectedTank(null);
-                    setIsSidebarOpen(false);
-                  }}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg ${
-                    activeTab === item.id ? 'bg-blue-50 text-blue-600' : 'text-slate-600'
-                  }`}
-                >
-                  <item.icon className="w-5 h-5" />
-                  <span className="font-medium">{item.label}</span>
-                </button>
-              ))}
-            </nav>
-          </div>
-        </div>
-      )}
-
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col pt-16 md:pt-0 overflow-hidden">
-        {/* Top bar */}
-        <header className="h-16 bg-white border-b px-8 flex items-center justify-between flex-shrink-0">
+      <main className="flex-1 flex flex-col overflow-hidden">
+        <header className="h-16 bg-white border-b px-8 flex items-center justify-between">
           <h1 className="text-lg font-semibold text-slate-800">
             {selectedTank ? `Detalles: ${selectedTank.name}` : navItems.find(i => i.id === activeTab)?.label}
           </h1>
           <div className="flex items-center space-x-4">
             <div className="relative">
               <Bell className="w-6 h-6 text-slate-500 cursor-pointer" />
-              {criticalCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full animate-pulse">
-                  {criticalCount}
-                </span>
-              )}
+              {criticalCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full animate-pulse">{criticalCount}</span>}
             </div>
-            <div className="h-8 w-[1px] bg-slate-200" />
-            <button className="flex items-center space-x-2 text-sm text-slate-600 font-medium hover:text-blue-600 transition-colors">
-              <Settings className="w-5 h-5" />
-              <span className="hidden sm:inline">Configuración</span>
-            </button>
           </div>
         </header>
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8">
-          {renderContent()}
+          {selectedTank ? (
+            <TankDetails 
+              tank={selectedTank} 
+              onBack={() => setSelectedTankId(null)} 
+            />
+          ) : (
+            <>
+              {activeTab === 'dashboard' && <Dashboard tanks={tanks} onSelectTank={handleSelectTank} />}
+              {activeTab === 'map' && <MapView tanks={tanks} onSelectTank={handleSelectTank} />}
+              {activeTab === 'chat' && <GeminiChat tanks={tanks} />}
+              {activeTab === 'reports' && <UserReports tanks={tanks} />}
+            </>
+          )}
         </div>
       </main>
     </div>

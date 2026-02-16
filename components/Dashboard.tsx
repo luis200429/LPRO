@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   Thermometer, 
@@ -9,7 +8,6 @@ import {
   AlertTriangle, 
   CheckCircle2,
   AlertCircle,
-  // Fix: Added missing Droplets icon from lucide-react
   Droplets
 } from 'lucide-react';
 import { WaterTank } from '../types';
@@ -74,72 +72,97 @@ const Dashboard: React.FC<DashboardProps> = ({ tanks, onSelectTank }) => {
       <h2 className="text-xl font-bold text-slate-800">Estado de los Depósitos</h2>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {tanks.map((tank) => (
-          <div 
-            key={tank.id} 
-            onClick={() => onSelectTank(tank)}
-            className="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:border-blue-400 hover:shadow-lg transition-all cursor-pointer"
-          >
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{tank.name}</h3>
-                  <p className="text-sm text-slate-500">{tank.location.address}</p>
-                </div>
-                <div className={`px-3 py-1 rounded-full border flex items-center space-x-1 text-xs font-semibold ${getStatusStyle(tank.status)}`}>
-                  {getStatusIcon(tank.status)}
-                  <span>{tank.status.toUpperCase()}</span>
-                </div>
-              </div>
+        {tanks.map((tank) => {
+          
+          // 🔥 LÓGICA CLAVE: Extraemos el dato más reciente
+          // Si hay histórico de InfluxDB, cogemos el índice 0 (el más nuevo).
+          // Si no, usamos el lastReading (los mock iniciales o el websocket).
+          const dbData = tank.history && tank.history.length > 0 ? tank.history[0] : null;
+          
+          const currentReading = dbData ? {
+            turbidity: dbData.turbidity,
+            ph: dbData.ph,
+            level: dbData.water_level,
+            temperature: dbData.temperature,
+            // 🔥 Usamos estrictamente tu timestamp aquí también
+            timestamp: String(dbData.timestamp).length === 10 ? dbData.timestamp * 1000 : dbData.timestamp
+          } : {
+            turbidity: tank.lastReading.turbidity,
+            ph: tank.lastReading.ph,
+            level: tank.lastReading.level,
+            temperature: tank.lastReading.temperature,
+            timestamp: String(tank.lastReading.timestamp).length === 10 ? tank.lastReading.timestamp * 1000 : tank.lastReading.timestamp
+          };
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                  <div className="flex items-center space-x-2 text-slate-500 mb-1">
-                    <Wind className="w-4 h-4" />
-                    <span className="text-xs">Turbidez</span>
+          return (
+            <div 
+              key={tank.id} 
+              onClick={() => onSelectTank(tank)}
+              className="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:border-blue-400 hover:shadow-lg transition-all cursor-pointer"
+            >
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{tank.name}</h3>
+                    <p className="text-sm text-slate-500">{tank.location.address}</p>
                   </div>
-                  <p className="text-lg font-bold text-slate-900">{tank.lastReading.turbidity} NTU</p>
+                  <div className={`px-3 py-1 rounded-full border flex items-center space-x-1 text-xs font-semibold ${getStatusStyle(tank.status)}`}>
+                    {getStatusIcon(tank.status)}
+                    <span>{tank.status.toUpperCase()}</span>
+                  </div>
                 </div>
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                  <div className="flex items-center space-x-2 text-slate-500 mb-1">
-                    <Droplets className="w-4 h-4" />
-                    <span className="text-xs">pH</span>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <div className="flex items-center space-x-2 text-slate-500 mb-1">
+                      <Wind className="w-4 h-4" />
+                      <span className="text-xs">Turbidez</span>
+                    </div>
+                    <p className="text-lg font-bold text-slate-900">{currentReading.turbidity} NTU</p>
                   </div>
-                  <p className="text-lg font-bold text-slate-900">{tank.lastReading.ph}</p>
-                </div>
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                  <div className="flex items-center space-x-2 text-slate-500 mb-1">
-                    <Waves className="w-4 h-4" />
-                    <span className="text-xs">Nivel</span>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <div className="flex items-center space-x-2 text-slate-500 mb-1">
+                      <Droplets className="w-4 h-4" />
+                      <span className="text-xs">pH</span>
+                    </div>
+                    <p className="text-lg font-bold text-slate-900">{currentReading.ph}</p>
                   </div>
-                  <div className="flex items-end space-x-2">
-                    <p className="text-lg font-bold text-slate-900">{tank.lastReading.level}%</p>
-                    <div className="flex-1 h-1.5 bg-slate-200 rounded-full mb-1.5 overflow-hidden">
-                      <div 
-                        className="h-full bg-blue-500 transition-all" 
-                        style={{ width: `${tank.lastReading.level}%` }}
-                      />
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <div className="flex items-center space-x-2 text-slate-500 mb-1">
+                      <Waves className="w-4 h-4" />
+                      <span className="text-xs">Nivel</span>
+                    </div>
+                    <div className="flex items-end space-x-2">
+                      <p className="text-lg font-bold text-slate-900">{currentReading.level}%</p>
+                      <div className="flex-1 h-1.5 bg-slate-200 rounded-full mb-1.5 overflow-hidden">
+                        <div 
+                          className="h-full bg-blue-500 transition-all" 
+                          style={{ width: `${currentReading.level}%` }}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                  <div className="flex items-center space-x-2 text-slate-500 mb-1">
-                    <Thermometer className="w-4 h-4" />
-                    <span className="text-xs">Temp.</span>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <div className="flex items-center space-x-2 text-slate-500 mb-1">
+                      <Thermometer className="w-4 h-4" />
+                      <span className="text-xs">Temp.</span>
+                    </div>
+                    <p className="text-lg font-bold text-slate-900">{currentReading.temperature}°C</p>
                   </div>
-                  <p className="text-lg font-bold text-slate-900">{tank.lastReading.temperature}°C</p>
+                </div>
+              </div>
+              
+              <div className="px-6 py-4 bg-slate-50 border-t flex items-center justify-between">
+                <span className="text-xs text-slate-400">
+                  Última lectura: {new Date(currentReading.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+                <div className="flex items-center text-blue-600 text-sm font-semibold group-hover:translate-x-1 transition-transform">
+                  Ver detalles <ArrowUpRight className="w-4 h-4 ml-1" />
                 </div>
               </div>
             </div>
-            
-            <div className="px-6 py-4 bg-slate-50 border-t flex items-center justify-between">
-              <span className="text-xs text-slate-400">Última lectura: {new Date(tank.lastReading.timestamp).toLocaleTimeString()}</span>
-              <div className="flex items-center text-blue-600 text-sm font-semibold group-hover:translate-x-1 transition-transform">
-                Ver detalles <ArrowUpRight className="w-4 h-4 ml-1" />
-              </div>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

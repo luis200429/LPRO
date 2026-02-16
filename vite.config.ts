@@ -1,23 +1,28 @@
-import path from 'path';
-import { defineConfig, loadEnv } from 'vite';
+
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, '.', '');
-    return {
-      server: {
-        port: 3000,
-        host: '0.0.0.0',
+// SUSTITUYE ESTA IP POR LA DE TU SERVIDOR (ej: '192.168.1.50' o '34.23.12.1')
+const BACKEND_IP = '34.73.211.235'; 
+const BACKEND_PORT = '3000';
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 8080,
+    strictPort: true,
+    host: true,
+    proxy: {
+      '/api': {
+        target: `http://${BACKEND_IP}:${BACKEND_PORT}`,
+        changeOrigin: true,
+        secure: false,
       },
-      plugins: [react()],
-      define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+      '/socket.io': {
+        target: `http://${BACKEND_IP}:${BACKEND_PORT}`,
+        ws: true,
+        changeOrigin: true,
       },
-      resolve: {
-        alias: {
-          '@': path.resolve(__dirname, '.'),
-        }
-      }
-    };
+    },
+  },
 });
