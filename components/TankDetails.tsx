@@ -6,7 +6,8 @@ import {
   Activity,
   Zap,
   Gauge,
-  Droplet
+  Droplet,
+  Calendar // Añadimos el icono del calendario
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -26,46 +27,76 @@ interface TankDetailsProps {
   onBack: () => void;
 }
 
+// Tipo para controlar el modo de filtro
+type FilterMode = '24h' | 'custom';
+
 const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
-  const [timeRange, setTimeRange] = useState<'24h' | '7d'>('24h');
+  const [filterMode, setFilterMode] = useState<FilterMode>('24h');
+  
+  // Por defecto, las fechas personalizadas apuntan al día de hoy
+  const todayDate = new Date().toISOString().split('T')[0];
+  const [startDate, setStartDate] = useState<string>(todayDate);
+  const [endDate, setEndDate] = useState<string>(todayDate);
 
   const chartData = useMemo(() => {
     if (!tank.history) return [];
 
     const now = new Date().getTime();
-    const cutoffTime = timeRange === '24h' 
-      ? now - (24 * 60 * 60 * 1000) 
-      : now - (7 * 24 * 60 * 60 * 1000);
+    let startTime = 0;
+    let endTime = now;
 
+    // 1. Calculamos los rangos de tiempo según el modo
+    if (filterMode === '24h') {
+      startTime = now - (24 * 60 * 60 * 1000); // 24 horas atrás
+      endTime = now;
+    } else {
+      // Modo personalizado
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0); // Inicio del día
+      startTime = start.getTime();
+
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999); // Final del día
+      endTime = end.getTime();
+    }
+
+    // 2. Filtramos, ordenamos y formateamos
     return [...tank.history]
-      // 🔥 Ordenamos estrictamente por tu timestamp
+      .filter((h: any) => {
+        // Obtenemos el timestamp real
+        const timeVal = String(h.timestamp).length === 10 ? h.timestamp * 1000 : h.timestamp;
+        return timeVal >= startTime && timeVal <= endTime;
+      })
       .sort((a: any, b: any) => {
         const timeA = String(a.timestamp).length === 10 ? a.timestamp * 1000 : a.timestamp;
         const timeB = String(b.timestamp).length === 10 ? b.timestamp * 1000 : b.timestamp;
         return timeA - timeB; // Ascendente
       })
       .map((h: any) => {
-        // 🔥 Usamos solo tu timestamp para generar la fecha real
         const timeVal = String(h.timestamp).length === 10 ? h.timestamp * 1000 : h.timestamp;
         const dateObj = new Date(timeVal);
         
+        // Calculamos cuántos días abarca el filtro para mostrar la fecha de forma óptima
+        const durationDays = (endTime - startTime) / (1000 * 60 * 60 * 24);
         let timeString = '';
-        if (timeRange === '24h') {
+        
+        if (durationDays <= 1) {
+          // Si es un solo día o 24h, solo mostramos la hora
           timeString = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         } else {
-          const day = new Intl.DateTimeFormat('es-ES', { weekday: 'short' }).format(dateObj);
+          // Si son varios días, mostramos Día/Mes y la hora
+          const day = new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: '2-digit' }).format(dateObj);
           const time = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
           timeString = `${day} ${time}`;
         }
 
         return {
           ...h,
-          rawTime: dateObj.getTime(),
+          rawTime: timeVal,
           time: timeString
         };
-      })
-      .filter((h: any) => h.rawTime >= cutoffTime);
-  }, [tank.history, timeRange]);
+      });
+  }, [tank.history, filterMode, startDate, endDate]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -78,6 +109,7 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
       </button>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* PANEL IZQUIERDO (Información del tanque) */}
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
             <h2 className="text-2xl font-bold text-slate-900 mb-2">{tank.name}</h2>
@@ -107,14 +139,14 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
               <div className="flex justify-between items-center p-3 rounded-2xl bg-slate-50 border border-slate-100">
                 <div className="flex items-center space-x-3">
                   <Gauge className="text-purple-500" />
-                  <span className="text-sm font-medium">TDS (Conductividad)</span>
+                  <span className="text-sm font-medium">TDS</span>
                 </div>
                 <span className="text-sm font-bold text-slate-700">{tank.lastReading?.tds || '0'} ppm</span>
               </div>
               <div className="flex justify-between items-center p-3 rounded-2xl bg-slate-50 border border-slate-100">
                 <div className="flex items-center space-x-3">
                   <Droplet className="text-cyan-500" />
-                  <span className="text-sm font-medium">Caudal Actual</span>
+                  <span className="text-sm font-medium">Caudal</span>
                 </div>
                 <span className="text-sm font-bold text-slate-700">{tank.lastReading?.flow || '0'} L/min</span>
               </div>
@@ -133,22 +165,60 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
           </div>
         </div>
 
+        {/* PANEL DERECHO (Gráficas y Controles de Fecha) */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-2">
-                <History className="w-5 h-5 text-slate-400" />
-                <h3 className="font-bold text-slate-800">Histórico de Turbidez (NTU)</h3>
-              </div>
-              
-              <select 
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value as '24h' | '7d')}
-                className="bg-slate-50 border rounded-lg text-xs font-medium px-2 py-1 outline-none cursor-pointer hover:bg-slate-100 transition-colors"
+          
+          {/* BARRA DE CONTROLES DE FECHA */}
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex space-x-2 w-full sm:w-auto">
+              <button
+                onClick={() => setFilterMode('24h')}
+                className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-sm font-bold transition-colors ${
+                  filterMode === '24h' 
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-200' 
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
               >
-                <option value="24h">Últimas 24h</option>
-                <option value="7d">Última semana</option>
-              </select>
+                Últimas 24h
+              </button>
+              <button
+                onClick={() => setFilterMode('custom')}
+                className={`flex-1 sm:flex-none flex items-center justify-center px-4 py-2 rounded-xl text-sm font-bold transition-colors ${
+                  filterMode === 'custom' 
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-200' 
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <Calendar className="w-4 h-4 mr-2" />
+                Personalizado
+              </button>
+            </div>
+
+            {/* Selectores de fecha (solo se muestran si está en modo custom) */}
+            {filterMode === 'custom' && (
+              <div className="flex items-center space-x-2 animate-in slide-in-from-right-4 duration-300">
+                <input 
+                  type="date" 
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 px-3 py-1.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                />
+                <span className="text-slate-400 font-medium text-sm">a</span>
+                <input 
+                  type="date" 
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  min={startDate} // Evita que la fecha de fin sea anterior a la de inicio
+                  className="bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 px-3 py-1.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+            <div className="flex items-center space-x-2 mb-6">
+              <History className="w-5 h-5 text-slate-400" />
+              <h3 className="font-bold text-slate-800">Histórico de Turbidez (NTU)</h3>
             </div>
             
             <div className="h-[300px] w-full">
