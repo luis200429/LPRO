@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeft, MapPin, Activity, Zap, Gauge, Droplet, ExternalLink } from 'lucide-react';
+import { ChevronLeft, MapPin, Activity, Zap, Gauge, Droplet, ExternalLink, Thermometer } from 'lucide-react';
 import { WaterTank } from '../types';
 
 interface TankDetailsProps {
@@ -7,10 +7,16 @@ interface TankDetailsProps {
   onBack: () => void;
 }
 
-// ⚠️ ACTUALIZADO: Puerto 3000 y datos reales de tu dashboard
+// Configuración base de Grafana
 const GRAFANA_BASE_URL = 'http://34.73.211.235:3001'; 
-const DASHBOARD_ID = 'ad9rthz'; 
-const DASHBOARD_SLUG = 'augacalidade-zamans';
+
+// Mapeo dinámico: Relacionamos el ID del tanque con su propio Dashboard en Grafana
+// IMPORTANTE: Sustituye los IDs y Slugs ficticios por los reales de tus dashboards duplicados.
+const GRAFANA_DASHBOARDS: Record<string, { id: string, slug: string }> = {
+  'cm_zamans': { id: 'ad9rthz', slug: 'augacalidade-zamans' },
+  'cm_alba': { id: 'adw87hp', slug: 'augacalidade-alba' }, 
+  'cm_vincios': { id: 'adqh2j2', slug: 'augacalidade-vincios' },
+};
 
 type FilterMode = '24h' | 'custom';
 
@@ -20,7 +26,9 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
   const [startDate, setStartDate] = useState<string>(todayDate);
   const [endDate, setEndDate] = useState<string>(todayDate);
 
-  // ⚠️ ACTUALIZADO: El panelId ahora es un string (ej: 'panel-1') y añadimos el parámetro SceneSolo
+  // Obtenemos la info del dashboard para el tanque actual (o usamos Zamans por defecto si no existe)
+  const dashboardInfo = GRAFANA_DASHBOARDS[tank.id] || GRAFANA_DASHBOARDS['cm_zamans'];
+
   const getGrafanaUrl = (panelId: string) => {
     let from = 'now-24h';
     let to = 'now';
@@ -30,13 +38,14 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
       to = new Date(`${endDate}T23:59:59Z`).getTime().toString();
     }
 
-    return `${GRAFANA_BASE_URL}/d-solo/${DASHBOARD_ID}/${DASHBOARD_SLUG}?orgId=1&from=${from}&to=${to}&timezone=browser&panelId=${panelId}&var-community=${tank.id}&__feature.dashboardSceneSolo=true`;
+    // Usamos el ID y SLUG dinámicos sacados del mapeo para los iframes
+    return `${GRAFANA_BASE_URL}/d-solo/${dashboardInfo.id}/${dashboardInfo.slug}?orgId=1&from=${from}&to=${to}&timezone=browser&panelId=${panelId}&__feature.dashboardSceneSolo=true`;
   };
 
   const currentLevel = tank.lastReading?.level || tank.lastReading?.water_level || 0;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500 pb-10">
       
       {/* CABECERA */}
       <div className="flex justify-between items-center">
@@ -44,7 +53,7 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
           <ChevronLeft className="w-5 h-5 mr-1" /> Volver al listado
         </button>
         <a 
-          href={`${GRAFANA_BASE_URL}/d/${DASHBOARD_ID}/${DASHBOARD_SLUG}?var-community=${tank.id}`} 
+          href={`${GRAFANA_BASE_URL}/d/${dashboardInfo.id}/${dashboardInfo.slug}`} 
           target="_blank" 
           rel="noreferrer"
           className="text-xs flex items-center text-blue-600 font-bold hover:underline"
@@ -55,9 +64,9 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* PANEL IZQUIERDO */}
+        {/* PANEL IZQUIERDO: Información Actual */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm sticky top-6">
             <h2 className="text-2xl font-bold text-slate-900 mb-2">{tank.name}</h2>
             <div className="flex items-center text-slate-500 mb-6">
               <MapPin className="w-4 h-4 mr-1" />
@@ -78,6 +87,10 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
                 <b>{tank.lastReading?.ph || 0}</b>
               </div>
               <div className="flex justify-between p-3 bg-slate-50 rounded-2xl text-slate-700">
+                <span className="flex items-center gap-2"><Thermometer size={18} className="text-slate-400"/> Temperatura</span>
+                <b>{tank.lastReading?.temperature || 0} °C</b>
+              </div>
+              <div className="flex justify-between p-3 bg-slate-50 rounded-2xl text-slate-700">
                 <span className="flex items-center gap-2"><Zap size={18} className="text-slate-400"/> Batería</span>
                 <b>{tank.lastReading?.battery || 0} V</b>
               </div>
@@ -85,10 +98,10 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
           </div>
         </div>
 
-        {/* PANEL DERECHO: Gráficas de Grafana embebidas */}
+        {/* PANEL DERECHO: Históricos de Grafana */}
         <div className="lg:col-span-2 space-y-6">
           
-          {/* CONTROLES DE FECHA */}
+          {/* FILTRO DE FECHAS */}
           <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex space-x-2 w-full sm:w-auto">
               <button 
@@ -114,38 +127,66 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
             )}
           </div>
 
-          {/* GRÁFICA 1: TURBIDEZ (PanelId: 'panel-1') */}
-          <div className="bg-white p-2 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-            <h3 className="p-4 font-bold text-slate-800 flex items-center">
-              <Gauge className="w-5 h-5 mr-2 text-blue-500" /> Histórico de Turbidez
-            </h3>
-            <div className="h-[350px] w-full bg-slate-50 rounded-b-2xl overflow-hidden">
-              <iframe 
-                src={getGrafanaUrl('panel-1')}
-                width="100%" 
-                height="100%" 
-                frameBorder="0"
-                title="Gráfica Turbidez Grafana"
-              ></iframe>
+          {/* GRID DE GRÁFICAS */}
+          <div className="grid grid-cols-1 gap-6">
+            
+            {/* GRÁFICA 1: TURBIDEZ (panel-1) */}
+            <div className="bg-white p-2 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+              <h3 className="p-4 font-bold text-slate-800 flex items-center">
+                <Gauge className="w-5 h-5 mr-2 text-blue-500" /> Histórico de Turbidez
+              </h3>
+              <div className="h-[300px] w-full bg-slate-50 rounded-b-2xl overflow-hidden">
+                <iframe 
+                  key={getGrafanaUrl('panel-1')} 
+                  src={getGrafanaUrl('panel-1')} 
+                  width="100%" height="100%" frameBorder="0" title="Turbidez">
+                </iframe>
+              </div>
             </div>
-          </div>
 
-          {/* GRÁFICA 2: pH (PanelId: 'panel-2') */}
-          <div className="bg-white p-2 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-            <h3 className="p-4 font-bold text-slate-800 flex items-center">
-              <Droplet className="w-5 h-5 mr-2 text-purple-500" /> Variación de pH
-            </h3>
-            <div className="h-[250px] w-full bg-slate-50 rounded-b-2xl overflow-hidden">
-              <iframe 
-                src={getGrafanaUrl('panel-2')} 
-                width="100%" 
-                height="100%" 
-                frameBorder="0"
-                title="Gráfica pH Grafana"
-              ></iframe>
+            {/* GRÁFICA 2: pH (panel-2) */}
+            <div className="bg-white p-2 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+              <h3 className="p-4 font-bold text-slate-800 flex items-center">
+                <Droplet className="w-5 h-5 mr-2 text-purple-500" /> Variación de pH
+              </h3>
+              <div className="h-[300px] w-full bg-slate-50 rounded-b-2xl overflow-hidden">
+                <iframe 
+                  key={getGrafanaUrl('panel-2')} 
+                  src={getGrafanaUrl('panel-2')} 
+                  width="100%" height="100%" frameBorder="0" title="pH">
+                </iframe>
+              </div>
             </div>
-          </div>
 
+            {/* GRÁFICA 3: TEMPERATURA (panel-3) */}
+            <div className="bg-white p-2 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+              <h3 className="p-4 font-bold text-slate-800 flex items-center">
+                <Thermometer className="w-5 h-5 mr-2 text-orange-500" /> Evolución de Temperatura
+              </h3>
+              <div className="h-[300px] w-full bg-slate-50 rounded-b-2xl overflow-hidden">
+                <iframe 
+                  key={getGrafanaUrl('panel-3')} 
+                  src={getGrafanaUrl('panel-3')} 
+                  width="100%" height="100%" frameBorder="0" title="Temperatura">
+                </iframe>
+              </div>
+            </div>
+
+            {/* GRÁFICA 4: CONDUCTIVIDAD/TDS (panel-4) */}
+            <div className="bg-white p-2 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+              <h3 className="p-4 font-bold text-slate-800 flex items-center">
+                <Zap className="w-5 h-5 mr-2 text-yellow-500" /> Conductividad y TDS
+              </h3>
+              <div className="h-[300px] w-full bg-slate-50 rounded-b-2xl overflow-hidden">
+                <iframe 
+                  key={getGrafanaUrl('panel-4')} 
+                  src={getGrafanaUrl('panel-4')} 
+                  width="100%" height="100%" frameBorder="0" title="Conductividad">
+                </iframe>
+              </div>
+            </div>
+
+          </div>
         </div>
       </div>
     </div>
