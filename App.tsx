@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   LayoutDashboard, Map as MapIcon, Bell, MessageSquare, 
-  AlertTriangle, Droplets, Wifi
+  AlertTriangle, Wifi
 } from 'lucide-react';
 import { io } from 'socket.io-client';
 import Dashboard from './components/Dashboard';
@@ -11,6 +11,9 @@ import UserReports from './components/UserReports';
 import TankDetails from './components/TankDetails';
 import { WaterTank } from './types';
 import { MOCK_TANKS } from './constants';
+
+// Importamos el logo
+import logo from './fotos/logo.png';
 
 const BACKEND_URL = 'http://34.73.211.235:3000';
 
@@ -121,11 +124,9 @@ const App: React.FC = () => {
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
       <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 shadow-sm">
-        <div className="p-6 flex items-center space-x-2">
-          <Droplets className="w-8 h-8 text-blue-600" />
-          <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
-            AquaVigo
-          </span>
+        {/* Aquí está el cambio del logo */}
+        <div className="p-6 flex items-center justify-center">
+          <img src={logo} alt="Logo AquaVigo" className="h-10 w-auto" />
         </div>
         <nav className="flex-1 px-4 space-y-1">
           {navItems.map((item) => (
