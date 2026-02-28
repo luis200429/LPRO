@@ -11,7 +11,6 @@ interface TankDetailsProps {
 const GRAFANA_BASE_URL = 'http://34.73.211.235:3001'; 
 
 // Mapeo dinámico: Relacionamos el ID del tanque con su propio Dashboard en Grafana
-// IMPORTANTE: Sustituye los IDs y Slugs ficticios por los reales de tus dashboards duplicados.
 const GRAFANA_DASHBOARDS: Record<string, { id: string, slug: string }> = {
   'cm_zamans': { id: 'ad9rthz', slug: 'augacalidade-zamans' },
   'cm_alba': { id: 'adw87hp', slug: 'augacalidade-alba' }, 
@@ -30,7 +29,7 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
   const dashboardInfo = GRAFANA_DASHBOARDS[tank.id] || GRAFANA_DASHBOARDS['cm_zamans'];
 
   const getGrafanaUrl = (panelId: string) => {
-    let from = 'now-24h';
+    let from = 'now/d';
     let to = 'now';
 
     if (filterMode === 'custom') {
@@ -39,29 +38,35 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
     }
 
     // Usamos el ID y SLUG dinámicos sacados del mapeo para los iframes
-    return `${GRAFANA_BASE_URL}/d-solo/${dashboardInfo.id}/${dashboardInfo.slug}?orgId=1&from=${from}&to=${to}&timezone=browser&panelId=${panelId}&__feature.dashboardSceneSolo=true`;
+    return `${GRAFANA_BASE_URL}/d-solo/${dashboardInfo.id}/${dashboardInfo.slug}?orgId=1&from=${from}&to=${to}&timezone=browser&lang=es&panelId=${panelId}&__feature.dashboardSceneSolo=true`;
+  }
+  
+  const currentLevel = tank.lastReading?.level || tank.lastReading?.water_level || 0;
+
+  // 🔥 ICA LIMPIO Y SEGURO: Lo forzamos a Número y confiamos en 'ica'
+  const currentIca = Number(tank.lastReading?.ica) || 0;
+  
+  // Lógica de colores para el ICA
+  let icaStyles = {
+    caja: 'bg-emerald-50 border-emerald-100 text-emerald-700', 
+    icono: 'text-emerald-600'
   };
 
-  const currentLevel = tank.lastReading?.level || tank.lastReading?.water_level || 0;
+  if (currentIca < 50) {
+    icaStyles = {
+      caja: 'bg-red-50 border-red-100 text-red-700', 
+      icono: 'text-red-600'
+    };
+  } else if (currentIca < 70) {
+    icaStyles = {
+      caja: 'bg-amber-50 border-amber-100 text-amber-700', 
+      icono: 'text-amber-600'
+    };
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-10">
       
-      {/* CABECERA */}
-      <div className="flex justify-between items-center">
-        <button onClick={onBack} className="flex items-center text-slate-600 hover:text-blue-600 font-medium transition-colors">
-          <ChevronLeft className="w-5 h-5 mr-1" /> Volver al listado
-        </button>
-        <a 
-          href={`${GRAFANA_BASE_URL}/d/${dashboardInfo.id}/${dashboardInfo.slug}`} 
-          target="_blank" 
-          rel="noreferrer"
-          className="text-xs flex items-center text-blue-600 font-bold hover:underline"
-        >
-          Abrir en Grafana Full <ExternalLink className="w-3 h-3 ml-1" />
-        </a>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* PANEL IZQUIERDO: Información Actual */}
@@ -78,6 +83,15 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
                 <span className="flex items-center gap-2"><Droplet size={18}/> Nivel Actual</span>
                 <span>{currentLevel} %</span>
               </div>
+              
+              {/* CAJA DEL ICA DINÁMICA */}
+              <div className={`flex justify-between p-3 border rounded-2xl font-bold transition-colors ${icaStyles.caja}`}>
+                <span className="flex items-center gap-2">
+                  <Activity size={18} className={icaStyles.icono}/> Índice ICA
+                </span>
+                <span className="text-lg">{currentIca.toFixed(1)}</span>
+              </div>
+
               <div className="flex justify-between p-3 bg-slate-50 rounded-2xl text-slate-700">
                 <span className="flex items-center gap-2"><Gauge size={18} className="text-slate-400"/> Turbidez</span>
                 <b>{tank.lastReading?.turbidity || 0} NTU</b>

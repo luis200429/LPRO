@@ -8,7 +8,8 @@ import {
   AlertTriangle, 
   CheckCircle2,
   AlertCircle,
-  Droplets
+  Droplets,
+  Activity 
 } from 'lucide-react';
 import { WaterTank } from '../types';
 
@@ -18,7 +19,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ tanks, onSelectTank }) => {
-  const getStatusStyle = (status: WaterTank['status']) => {
+  const getStatusStyle = (status: 'optimal' | 'warning' | 'critical') => {
     switch (status) {
       case 'optimal': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
       case 'warning': return 'bg-amber-100 text-amber-700 border-amber-200';
@@ -26,13 +27,28 @@ const Dashboard: React.FC<DashboardProps> = ({ tanks, onSelectTank }) => {
     }
   };
 
-  const getStatusIcon = (status: WaterTank['status']) => {
+  const getStatusIcon = (status: 'optimal' | 'warning' | 'critical') => {
     switch (status) {
       case 'optimal': return <CheckCircle2 className="w-5 h-5" />;
       case 'warning': return <AlertTriangle className="w-5 h-5" />;
       case 'critical': return <AlertCircle className="w-5 h-5" />;
     }
   };
+
+  // Calculamos el estado de la alerta en base al valor del ica
+  const calculateIcaStatus = (icaValue: number): 'optimal' | 'warning' | 'critical' => {
+    if (icaValue >= 70) return 'optimal'; // Agua en buen estado
+    if (icaValue >= 50) return 'warning'; // Agua regular (posible alerta)
+    return 'critical';                    // Agua en mal estado
+  };
+
+  // Calculamos cuántos depósitos están en warning o critical en base a su ica actual
+  const activeAlertsCount = tanks.filter(tank => {
+    const dbData = tank.history && tank.history.length > 0 ? tank.history[0] : null;
+    // Si viene como 'ica' o 'ica' desde el backend, ajusta el nombre aquí
+    const currentIca = dbData ? (dbData.ica || 0) : (tank.lastReading.ica || tank.lastReading.ica || 0);
+    return calculateIcaStatus(currentIca) !== 'optimal';
+  }).length;
 
   return (
     <div className="space-y-6">
@@ -50,7 +66,8 @@ const Dashboard: React.FC<DashboardProps> = ({ tanks, onSelectTank }) => {
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-slate-500">Alertas Activas</p>
-            <p className="text-3xl font-bold text-slate-900">{tanks.filter(t => t.status !== 'optimal').length}</p>
+            {/* Usamos el contador dinámico de alertas */}
+            <p className="text-3xl font-bold text-slate-900">{activeAlertsCount}</p>
           </div>
           <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
             <AlertTriangle className="w-6 h-6" />
@@ -74,25 +91,34 @@ const Dashboard: React.FC<DashboardProps> = ({ tanks, onSelectTank }) => {
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {tanks.map((tank) => {
           
-          // 🔥 LÓGICA CLAVE: Extraemos el dato más reciente
-          // Si hay histórico de InfluxDB, cogemos el índice 0 (el más nuevo).
-          // Si no, usamos el lastReading (los mock iniciales o el websocket).
           const dbData = tank.history && tank.history.length > 0 ? tank.history[0] : null;
+
+          const rawIca = dbData 
+            ? (dbData.ica ?? dbData.Ica ?? dbData.ICA ?? 0) 
+            : (tank.lastReading.ica ?? tank.lastReading.Ica ?? tank.lastReading.ICA ?? 0);
+
+          const safeIca = Number(rawIca);
           
           const currentReading = dbData ? {
             turbidity: dbData.turbidity,
             ph: dbData.ph,
+            conductivity: dbData.conductivity,
             level: dbData.water_level,
             temperature: dbData.temperature,
-            // 🔥 Usamos estrictamente tu timestamp aquí también
+            Ica: dbData.ica || 0, 
             timestamp: String(dbData.timestamp).length === 10 ? dbData.timestamp * 1000 : dbData.timestamp
           } : {
             turbidity: tank.lastReading.turbidity,
             ph: tank.lastReading.ph,
+            conductivity: tank.lastReading.conductivity,
             level: tank.lastReading.level,
             temperature: tank.lastReading.temperature,
+            Ica: tank.lastReading.Ica || tank.lastReading.ica || 0, // 🔥 Capturamos el Ica
             timestamp: String(tank.lastReading.timestamp).length === 10 ? tank.lastReading.timestamp * 1000 : tank.lastReading.timestamp
           };
+
+          // 🔥 Obtenemos el estado dinámico para este depósito en concreto
+          const dynamicStatus = calculateIcaStatus(currentReading.Ica);
 
           return (
             <div 
@@ -106,13 +132,26 @@ const Dashboard: React.FC<DashboardProps> = ({ tanks, onSelectTank }) => {
                     <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{tank.name}</h3>
                     <p className="text-sm text-slate-500">{tank.location.address}</p>
                   </div>
-                  <div className={`px-3 py-1 rounded-full border flex items-center space-x-1 text-xs font-semibold ${getStatusStyle(tank.status)}`}>
-                    {getStatusIcon(tank.status)}
-                    <span>{tank.status.toUpperCase()}</span>
+                  {/* 🔥 Aplicamos el estilo e icono dinámico basado en el Ica */}
+                  <div className={`px-3 py-1 rounded-full border flex items-center space-x-1 text-xs font-semibold ${getStatusStyle(dynamicStatus)}`}>
+                    {getStatusIcon(dynamicStatus)}
+                    <span>{dynamicStatus.toUpperCase()}</span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
+                  
+                  {/* CAJA: Ica (NUEVA) */}
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 col-span-2 sm:col-span-1">
+                    <div className="flex items-center space-x-2 text-slate-500 mb-1">
+                      <Activity className="w-4 h-4 text-blue-500" />
+                      <span className="text-xs font-bold">ÍndIca ICA</span>
+                    </div>
+                    <p className={`text-lg font-bold ${dynamicStatus === 'critical' ? 'text-red-600' : dynamicStatus === 'warning' ? 'text-amber-600' : 'text-emerald-600'}`}>
+                      {currentReading.Ica.toFixed(1)}
+                    </p>
+                  </div>
+
                   <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
                     <div className="flex items-center space-x-2 text-slate-500 mb-1">
                       <Wind className="w-4 h-4" />
@@ -127,6 +166,16 @@ const Dashboard: React.FC<DashboardProps> = ({ tanks, onSelectTank }) => {
                     </div>
                     <p className="text-lg font-bold text-slate-900">{currentReading.ph}</p>
                   </div>
+                  
+                  {/* CAJA: CONDUCTIVIDAD (Corregida la etiqueta y el icono) */}
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <div className="flex items-center space-x-2 text-slate-500 mb-1">
+                      <Activity className="w-4 h-4" />
+                      <span className="text-xs">Conductividad</span>
+                    </div>
+                    <p className="text-lg font-bold text-slate-900">{currentReading.conductivity} µS</p>
+                  </div>
+
                   <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
                     <div className="flex items-center space-x-2 text-slate-500 mb-1">
                       <Waves className="w-4 h-4" />

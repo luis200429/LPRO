@@ -11,10 +11,9 @@ export const MOCK_TANKS: WaterTank[] = [
     lastReading: {
       turbidity: 4.5,
       ph: 6.8,
-      tds: 120,
+      conductivity: 120,
       temperature: 14.2,
       level: 85,
-      flow: 1.2,
       battery: 3.9,
       timestamp: new Date().toISOString()
     },
@@ -28,10 +27,9 @@ export const MOCK_TANKS: WaterTank[] = [
     lastReading: {
       turbidity: 0.8,
       ph: 7.1,
-      tds: 85,
+      conductivity: 85,
       temperature: 15.1,
       level: 92,
-      flow: 0.8,
       battery: 4.1,
       timestamp: new Date().toISOString()
     },
@@ -45,10 +43,9 @@ export const MOCK_TANKS: WaterTank[] = [
     lastReading: {
       turbidity: 12.8,
       ph: 5.4,
-      tds: 320,
+      conductivity: 320,
       temperature: 16.5,
       level: 45,
-      flow: 4.5,
       battery: 3.5,
       timestamp: new Date().toISOString()
     },

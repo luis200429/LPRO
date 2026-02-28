@@ -16,7 +16,7 @@ import { MOCK_TANKS } from './constants';
 // Importamos el logo
 import logo from './fotos/logo.png';
 
-const BACKEND_URL = 'http://34.73.211.235:3000';
+const BACKEND_URL = 'http://34.73.211.235:3002';
 
 const MainApp: React.FC = () => {
   const navigate = useNavigate();
@@ -28,7 +28,8 @@ const MainApp: React.FC = () => {
   const [tanks, setTanks] = useState<WaterTank[]>(MOCK_TANKS);
   const [isConnected, setIsConnected] = useState(false);
 
-  // Carga inicial masiva y ORDENADA de InfluxDB
+  // 1. Carga inicial masiva y ORDENADA de InfluxDB
+  // 1. Carga inicial masiva y ORDENADA de InfluxDB
   useEffect(() => {
     const fetchInitialData = async () => {
       console.log('📡 Iniciando carga masiva de datos desde InfluxDB...');
@@ -38,16 +39,36 @@ const MainApp: React.FC = () => {
             try {
               const response = await fetch(`${BACKEND_URL}/api/historico/${tank.id}`);
               if (response.ok) {
-                const historico = await response.json();
+                const historicoRaw = await response.json();
                 
-                // Ordenamos forzosamente de más reciente a más antiguo
+                // 🔥 EL TRUCO: InfluxDB nos manda '_time', lo traducimos a 'timestamp' para que React lo entienda
+                const historico = historicoRaw.map((item: any) => ({
+                  ...item,
+                  timestamp: item._time || item.timestamp,
+                  ice: item.ica || item.ice || 0 // Aprovechamos para asegurar el ICA
+                }));
+
+                // Ordenamos de más reciente a más antiguo
                 const sortedHistorico = historico.sort((a: any, b: any) => {
-                  const timeA = String(a.timestamp).length === 10 ? a.timestamp * 1000 : a.timestamp;
-                  const timeB = String(b.timestamp).length === 10 ? b.timestamp * 1000 : b.timestamp;
-                  return timeB - timeA; // Descendente (el más nuevo en [0])
+                  const timeA = new Date(a.timestamp).getTime();
+                  const timeB = new Date(b.timestamp).getTime();
+                  return timeB - timeA; 
                 });
 
-                return { ...tank, history: sortedHistorico };
+                // 🔥 Sobrescribimos la 'lastReading' con el último dato real de la base de datos
+                const lecturaMasReciente = sortedHistorico.length > 0 ? sortedHistorico[0] : tank.lastReading;
+
+                // Calculamos el estado de alerta para que la tarjeta cargue del color correcto al refrescar
+                let status: 'optimal' | 'warning' | 'critical' = 'optimal';
+                if (lecturaMasReciente.ice < 50) status = 'critical';
+                else if (lecturaMasReciente.ice < 70) status = 'warning';
+
+                return { 
+                  ...tank, 
+                  status,
+                  lastReading: lecturaMasReciente,
+                  history: sortedHistorico 
+                };
               }
             } catch (err) {
               console.error(`❌ Error cargando el tanque ${tank.id}:`, err);
@@ -66,7 +87,7 @@ const MainApp: React.FC = () => {
     fetchInitialData();
   }, []);
 
-  // Conexión Socket.io para Tiempo Real
+  // 2. Conexión Socket.io para Tiempo Real (Corregido)
   useEffect(() => {
     const socket = io(BACKEND_URL);
 
@@ -75,21 +96,33 @@ const MainApp: React.FC = () => {
       setIsConnected(true);
     });
 
-    socket.on('actualizacion_sensores', (data: { comunidad: string, datos: any, timestamp: string }) => {
-      setTanks(currentTanks => currentTanks.map(tank => {
-        if (tank.id === data.comunidad) {
-          
-          let status: 'optimal' | 'warning' | 'critical' = 'optimal';
-          if (data.datos.turbidity > 10) status = 'critical';
-          else if (data.datos.turbidity > 5) status = 'warning';
+    // Escuchamos el evento exacto que emite tu backend ('actualizacion_sensores')
+    socket.on('actualizacion_sensores', (mensaje) => {
+      const { comunidad, datos } = mensaje;
+      console.log('📥 Nuevo dato en tiempo real para:', comunidad, datos);
 
-          const newReading = { ...data.datos, timestamp: data.timestamp };
+      setTanks(currentTanks => currentTanks.map(tank => {
+        if (tank.id === comunidad) {
+          
+          // Calculamos el estado de alerta general (puedes ajustar esta lógica a tu gusto)
+          let status: 'optimal' | 'warning' | 'critical' = 'optimal';
+          if (datos.ica >= 70) status = 'optimal';
+          else if (datos.ica >= 50 && datos.ica <70) status = 'warning';
+          else status = 'critical';
+
+          // Preparamos la nueva lectura mapeando correctamente el ICE/ICA
+          const newReading = { 
+            ...datos, 
+            ice: datos.ica || datos.ice || 0, // Aseguramos que la variable ice exista
+            timestamp: datos.timestamp 
+          };
 
           return {
             ...tank,
             status,
             lastReading: newReading,
-            history: tank.history 
+            // Añadimos el nuevo dato al principio del historial para que las gráficas y el Dashboard lo pillen
+            history: [newReading, ...(tank.history || [])]
           };
         }
         return tank;
@@ -97,7 +130,7 @@ const MainApp: React.FC = () => {
     });
 
     socket.on('disconnect', () => {
-      console.warn('❌ Desconectado del servidor');
+      console.warn('❌ Desconectado del servidor WebSockets');
       setIsConnected(false);
     });
 
@@ -109,7 +142,7 @@ const MainApp: React.FC = () => {
     return () => { socket.disconnect(); };
   }, []);
 
-  // FUNCIONES DE NAVEGACIÓN (En lugar de cambiar estados, cambian la URL)
+  // FUNCIONES DE NAVEGACIÓN
   const handleSelectTank = (tank: WaterTank) => {
     navigate(`/tank/${tank.id}`);
   };
@@ -123,21 +156,19 @@ const MainApp: React.FC = () => {
     { id: 'chat', label: 'Asistente IA', icon: MessageSquare, path: '/chat' },
   ];
 
-  // Componente interno para manejar la vista de detalles con parámetros de URL
+  // Componente interno para manejar la vista de detalles
   const TankDetailsWrapper = () => {
     const { id } = useParams<{ id: string }>();
     const selectedTank = tanks.find(t => t.id === id);
     
-    if (!selectedTank) return <div>Tanque no encontrado</div>;
+    if (!selectedTank) return <div className="p-8 text-center text-slate-500">Tanque no encontrado</div>;
     
-    // 🔥 SOLUCIÓN APLICADA: Siempre volvemos al dashboard '/' en lugar de retroceder en el historial
     return <TankDetails tank={selectedTank} onBack={() => navigate('/')} />;
   };
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
       <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 shadow-sm">
-        {/* Aquí está el cambio del logo */}
         <div className="p-6 flex items-center justify-center">
           <img src={logo} alt="Logo AquaVigo" className="h-10 w-auto" />
         </div>
@@ -174,7 +205,7 @@ const MainApp: React.FC = () => {
           </h1>
           <div className="flex items-center space-x-4">
             <div className="relative">
-              <Bell className="w-6 h-6 text-slate-500 cursor-pointer" />
+              <Bell className="w-6 h-6 text-slate-500 cursor-pointer hover:text-blue-600 transition-colors" />
               {criticalCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full animate-pulse">{criticalCount}</span>}
             </div>
           </div>

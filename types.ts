@@ -18,9 +18,28 @@ export interface WaterTank {
     lng: number;
     address: string;
   };
+  
   status: 'optimal' | 'warning' | 'critical';
-  lastReading: SensorData;
-  history: SensorData[];
+  lastReading: {
+    turbidity: number;
+    ph: number;
+    conductivity: number;
+    level: number;
+    temperature: number;
+    timestamp: number | string;
+    battery: number;
+    ica?: number; 
+  };
+  history?: Array<{
+    turbidity: number;
+    ph: number;
+    conductivity: number;
+    water_level: number;l
+    temperature: number;
+    timestamp: number;
+    ice?: number; 
+    ica?: number;
+  }>;
 }
 
 export interface UserReport {
