@@ -16,7 +16,7 @@ import { MOCK_TANKS } from './constants';
 // Importamos el logo
 import logo from './fotos/logo.png';
 
-const BACKEND_URL = 'http://34.73.211.235:3002';
+const BACKEND_URL = '';
 
 const MainApp: React.FC = () => {
   const navigate = useNavigate();
@@ -25,10 +25,10 @@ const MainApp: React.FC = () => {
   // Ahora la pestaña activa se calcula leyendo la URL
   const activeTab = location.pathname.split('/')[1] || 'dashboard';
 
-  const [tanks, setTanks] = useState<WaterTank[]>(MOCK_TANKS);
-  const [isConnected, setIsConnected] = useState(false);
+  const [tanks, setTanks] = useState<WaterTank[]>([]);
+    const [isConnected, setIsConnected] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); 
 
-  // 1. Carga inicial masiva y ORDENADA de InfluxDB
   // 1. Carga inicial masiva y ORDENADA de InfluxDB
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -45,7 +45,7 @@ const MainApp: React.FC = () => {
                 const historico = historicoRaw.map((item: any) => ({
                   ...item,
                   timestamp: item._time || item.timestamp,
-                  ice: item.ica || item.ice || 0 // Aprovechamos para asegurar el ICA
+                  ica: item.ica || item.Ica || 0 
                 }));
 
                 // Ordenamos de más reciente a más antiguo
@@ -60,8 +60,8 @@ const MainApp: React.FC = () => {
 
                 // Calculamos el estado de alerta para que la tarjeta cargue del color correcto al refrescar
                 let status: 'optimal' | 'warning' | 'critical' = 'optimal';
-                if (lecturaMasReciente.ice < 50) status = 'critical';
-                else if (lecturaMasReciente.ice < 70) status = 'warning';
+                if (lecturaMasReciente.ica < 50) status = 'critical';
+                else if (lecturaMasReciente.ica < 70) status = 'warning';
 
                 return { 
                   ...tank, 
@@ -78,6 +78,7 @@ const MainApp: React.FC = () => {
         );
         
         setTanks(updatedTanks);
+        setIsLoading(false);
         console.log('✅ Carga inicial completada con éxito');
       } catch (error) {
         console.error('❌ Error global en la carga inicial:', error);
@@ -110,10 +111,10 @@ const MainApp: React.FC = () => {
           else if (datos.ica >= 50 && datos.ica <70) status = 'warning';
           else status = 'critical';
 
-          // Preparamos la nueva lectura mapeando correctamente el ICE/ICA
+          // Preparamos la nueva lectura mapeando correctamente el ICA
           const newReading = { 
             ...datos, 
-            ice: datos.ica || datos.ice || 0, // Aseguramos que la variable ice exista
+            ica: datos.ica || 0, // Aseguramos que la variable ica exista
             timestamp: datos.timestamp 
           };
 

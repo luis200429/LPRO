@@ -50,6 +50,16 @@ const Dashboard: React.FC<DashboardProps> = ({ tanks, onSelectTank }) => {
     return calculateIcaStatus(currentIca) !== 'optimal';
   }).length;
 
+  if (!tanks || tanks.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <p className="text-slate-500 font-medium text-lg">Conectando con InfluxDB...</p>
+        <p className="text-slate-400 text-sm">Cargando histórico de calidad de agua</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Stats Summary */}
