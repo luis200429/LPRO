@@ -12,6 +12,8 @@ import UserReports from './components/UserReports';
 import TankDetails from './components/TankDetails';
 import { WaterTank } from './types';
 import { MOCK_TANKS } from './constants';
+import { Link } from 'react-router-dom';
+import NotificationBell from './components/NotificationBell';
 
 // Importamos el logo
 import logo from './fotos/logo.png';
@@ -170,9 +172,24 @@ const MainApp: React.FC = () => {
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
       <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 shadow-sm">
+        {/* 1. Eliminamos el div p-6 y lo metemos dentro del Link para que todo sea clickable */}
         <div className="p-6 flex items-center justify-center">
-          <img src={logo} alt="Logo AquaVigo" className="h-10 w-auto" />
-        </div>
+        <Link 
+          to="/" 
+          className="relative group flex items-center justify-center w-full h-full p-2 hover:opacity-80 active:scale-95 transition-all"
+          style={{ display: 'inline-flex', minWidth: '150px' }} // Asegura un ancho mínimo para el clic
+        >
+          {/* Imagen del logo */}
+          <img 
+            src={logo} 
+            alt="AugaCalidade" 
+            className="h-12 w-auto object-contain pointer-events-none" 
+          />
+          
+          {/* Capa invisible encima para capturar el clic en toda la zona */}
+          <div className="absolute inset-0 z-10 cursor-pointer"></div>
+        </Link>
+      </div>
         <nav className="flex-1 px-4 space-y-1">
           {navItems.map((item) => (
             <button
@@ -205,10 +222,8 @@ const MainApp: React.FC = () => {
                 : navItems.find(i => i.path === location.pathname || (location.pathname === '/' && i.id === 'dashboard'))?.label || 'Dashboard'}
           </h1>
           <div className="flex items-center space-x-4">
-            <div className="relative">
-              <Bell className="w-6 h-6 text-slate-500 cursor-pointer hover:text-blue-600 transition-colors" />
-              {criticalCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full animate-pulse">{criticalCount}</span>}
-            </div>
+            {/* Pasamos el array de tanks que ya tienes en el estado de App.tsx */}
+            <NotificationBell tanks={tanks} />
           </div>
         </header>
 
@@ -225,6 +240,8 @@ const MainApp: React.FC = () => {
     </div>
   );
 };
+
+
 
 const App: React.FC = () => {
   return (
