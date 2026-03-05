@@ -24,6 +24,7 @@ const Dashboard: React.FC<DashboardProps> = ({ tanks, onSelectTank }) => {
       case 'optimal': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
       case 'warning': return 'bg-amber-100 text-amber-700 border-amber-200';
       case 'critical': return 'bg-red-100 text-red-700 border-red-200';
+      default: return 'bg-emerald-100 text-emerald-700 border-emerald-200';
     }
   };
 
@@ -32,6 +33,7 @@ const Dashboard: React.FC<DashboardProps> = ({ tanks, onSelectTank }) => {
       case 'optimal': return <CheckCircle2 className="w-5 h-5" />;
       case 'warning': return <AlertTriangle className="w-5 h-5" />;
       case 'critical': return <AlertCircle className="w-5 h-5" />;
+      default: return <CheckCircle2 className="w-5 h-5" />;
     }
   };
 
@@ -61,9 +63,9 @@ const Dashboard: React.FC<DashboardProps> = ({ tanks, onSelectTank }) => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Stats Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="space-y-6">
+      {/* Stats Summary - AJUSTADO A 2 COLUMNAS COMO PEDISTE */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-slate-500">Total Depósitos</p>
@@ -73,25 +75,14 @@ const Dashboard: React.FC<DashboardProps> = ({ tanks, onSelectTank }) => {
             <Droplets className="w-6 h-6" />
           </div>
         </div>
+        
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-slate-500">Alertas Activas</p>
-            {/* Usamos el contador dinámico de alertas */}
             <p className="text-3xl font-bold text-slate-900">{activeAlertsCount}</p>
           </div>
           <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
             <AlertTriangle className="w-6 h-6" />
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-slate-500">Media Batería</p>
-            <p className="text-3xl font-bold text-slate-900">
-              {(tanks.reduce((acc, t) => acc + t.lastReading.battery, 0) / tanks.length).toFixed(1)}V
-            </p>
-          </div>
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
-            <Battery className="w-6 h-6" />
           </div>
         </div>
       </div>
@@ -212,9 +203,9 @@ const Dashboard: React.FC<DashboardProps> = ({ tanks, onSelectTank }) => {
               </div>
               
               <div className="px-6 py-4 bg-slate-50 border-t flex items-center justify-between">
-                <span className="text-xs text-slate-400">
-                  Última lectura: {new Date(currentReading.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
+              <span className="text-xs text-slate-400">
+                  Última lectura: {new Date(currentReading.timestamp).toLocaleDateString('es-ES')} {new Date(currentReading.timestamp).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+              </span>
                 <div className="flex items-center text-blue-600 text-sm font-semibold group-hover:translate-x-1 transition-transform">
                   Ver detalles <ArrowUpRight className="w-4 h-4 ml-1" />
                 </div>
