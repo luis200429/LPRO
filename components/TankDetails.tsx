@@ -29,7 +29,7 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
   const dashboardInfo = GRAFANA_DASHBOARDS[tank.id] || GRAFANA_DASHBOARDS['cm_zamans'];
 
   const getGrafanaUrl = (panelId: string) => {
-    let from = 'now/d';
+    let from = 'now-24h';
     let to = 'now';
 
     if (filterMode === 'custom') {
@@ -104,10 +104,7 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
                 <span className="flex items-center gap-2"><Thermometer size={18} className="text-slate-400"/> Temperatura</span>
                 <b>{tank.lastReading?.temperature || 0} °C</b>
               </div>
-              <div className="flex justify-between p-3 bg-slate-50 rounded-2xl text-slate-700">
-                <span className="flex items-center gap-2"><Zap size={18} className="text-slate-400"/> Batería</span>
-                <b>{tank.lastReading?.battery || 0} V</b>
-              </div>
+          
             </div>
           </div>
         </div>
