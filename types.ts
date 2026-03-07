@@ -47,8 +47,11 @@ export interface UserReport {
   tankId: string;
   userName: string;
   description: string;
-  type: 'color' | 'smell' | 'taste' | 'leak';
+  type: 'color' | 'smell' | 'taste' | 'leak' | string; 
   timestamp: string;
+  lat?: number | null;
+  lng?: number | null;
+  votes?: number;
 }
 
 export interface ChatMessage {

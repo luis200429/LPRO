@@ -7,16 +7,16 @@ interface Props {
 }
 
 const NotificationBell: React.FC<Props> = ({ tanks }) => {
-  const [isOpen, setIsOpen] = useState(false);
+const [isOpen, setIsOpen] = useState(false);
 
-  // Filtramos los tanques que no están en estado 'optimal' para las notificaciones
-  const alerts = tanks.filter(t => t.status !== 'optimal');
+// Filtramos los tanques que no están en estado 'optimal' para las notificaciones
+const alerts = tanks.filter(t => t.status !== 'optimal');
 
-  const getStatusConfig = (status: string) => {
-    if (status === 'critical') return { label: 'CRÍTICO', color: 'bg-red-100 text-red-700 border-red-200' };
-    if (status === 'warning') return { label: 'PELIGRO', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' };
-    return { label: 'NORMAL', color: 'bg-green-100 text-green-700 border-green-200' };
-  };
+const getStatusConfig = (status: string) => {
+  if (status === 'critical') return { label: 'CRÍTICO', color: 'bg-red-100 text-red-700 border-red-200' };
+  if (status === 'warning') return { label: 'PELIGRO', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' };
+  return { label: 'NORMAL', color: 'bg-green-100 text-green-700 border-green-200' };
+};
 
   return (
     <div className="relative">

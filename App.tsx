@@ -28,7 +28,7 @@ const MainApp: React.FC = () => {
   const activeTab = location.pathname.split('/')[1] || 'dashboard';
 
   const [tanks, setTanks] = useState<WaterTank[]>([]);
-    const [isConnected, setIsConnected] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true); 
 
   // 1. Carga inicial masiva y ORDENADA de InfluxDB
