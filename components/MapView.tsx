@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-// 1. Añadimos CircleMarker a las importaciones de react-leaflet
 import { MapContainer, TileLayer, Marker, Popup, Tooltip, GeoJSON, CircleMarker } from 'react-leaflet';
 import L from 'leaflet';
 import { Info } from 'lucide-react';
-// 2. Importamos UserReport (asegúrate de que lo tienes exportado en types.ts)
 import { WaterTank, UserReport } from '../types';
 import 'leaflet/dist/leaflet.css';
+
+// Importamos solo la función buffer para evitar conflictos
+import buffer from '@turf/buffer';
 
 // Pon aquí tu URL del backend si no estás usando un proxy
 const BACKEND_URL = ''; 
@@ -21,6 +22,14 @@ const burnedAreaStyle = {
   fillColor: '#1a1a1a',
   fillOpacity: 0.5,
   dashArray: '4'
+};
+
+const alertAreaStyle = {
+  color: '#ea580c', // Naranja oscuro para el borde
+  weight: 2,
+  fillColor: '#fb923c', // Naranja claro para el relleno
+  fillOpacity: 0.3,
+  dashArray: '5, 5'
 };
 
 const createCustomIcon = (status: 'optimal' | 'warning' | 'critical') => {
@@ -40,13 +49,12 @@ const MapView: React.FC<MapViewProps> = ({ tanks, onSelectTank }) => {
   const centerPosition: [number, number] = [41.15, -8.3]; 
 
   const [burnedAreas, setBurnedAreas] = useState<any>(null);
+  const [alertAreas, setAlertAreas] = useState<any>(null);
   const [isLoadingGeo, setIsLoadingGeo] = useState<boolean>(true);
   const [geoError, setGeoError] = useState<string | null>(null);
-  
-  // 3. Nuevo estado para guardar los reportes vecinales
   const [reports, setReports] = useState<UserReport[]>([]);
 
-  // Carga del GeoJSON
+  // Carga del GeoJSON y cálculo del área de alerta
   useEffect(() => {
     const fetchGeoJSON = async () => {
       try {
@@ -54,7 +62,38 @@ const MapView: React.FC<MapViewProps> = ({ tanks, onSelectTank }) => {
         const response = await fetch('/fotos/incendios-2025.json'); 
         if (!response.ok) throw new Error('No se pudo cargar el archivo GeoJSON.');
         const data = await response.json();
+        
         setBurnedAreas(data);
+
+        // --- CÁLCULO SEGURO DEL BUFFER (POLÍGONO A POLÍGONO) ---
+        if (data && data.features && Array.isArray(data.features)) {
+          const validBufferedFeatures: any[] = [];
+
+          // Procesamos cada incendio uno por uno
+          data.features.forEach((feature: any) => {
+            try {
+              // Verificamos que tenga una geometría válida antes de pasarlo a Turf
+              if (feature && feature.geometry && feature.geometry.coordinates) {
+                const buffered = buffer(feature, 2, { units: 'kilometers' });
+                if (buffered) {
+                  validBufferedFeatures.push(buffered);
+                }
+              }
+            } catch (err) {
+              // Si este polígono está corrupto, lo ignoramos y seguimos
+              console.warn("Polígono ignorado por geometría inválida:", feature.properties?.name || 'Desconocido');
+            }
+          });
+
+          // Si logramos rescatar polígonos válidos, actualizamos el estado
+          if (validBufferedFeatures.length > 0) {
+            setAlertAreas({
+              type: "FeatureCollection",
+              features: validBufferedFeatures
+            });
+          }
+        }
+
       } catch (error) {
         console.error("Error cargando las zonas incendiadas:", error);
         setGeoError("No se pudieron cargar las zonas incendiadas.");
@@ -65,7 +104,7 @@ const MapView: React.FC<MapViewProps> = ({ tanks, onSelectTank }) => {
     fetchGeoJSON();
   }, []);
 
-  // 4. Nuevo useEffect para cargar los reportes de la base de datos
+  // Carga de los reportes vecinales
   useEffect(() => {
     const fetchReportes = async () => {
       try {
@@ -89,6 +128,7 @@ const MapView: React.FC<MapViewProps> = ({ tanks, onSelectTank }) => {
           <p className="text-sm text-blue-800">
             Monitorización de arrastre de cenizas e incidencias vecinales.
             {isLoadingGeo && <span className="ml-2 font-bold animate-pulse text-blue-600">Cargando mapa...</span>}
+            {geoError && <span className="ml-2 font-bold text-red-600">{geoError}</span>}
           </p>
         </div>
       </div>
@@ -100,9 +140,20 @@ const MapView: React.FC<MapViewProps> = ({ tanks, onSelectTank }) => {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
-          {burnedAreas && (
+          {/* CAPA DE ALERTA NARANJA (Debajo de los incendios) */}
+          {alertAreas && alertAreas.features && alertAreas.features.length > 0 && (
             <GeoJSON 
-              key="burned-areas-layer" 
+              key={`alert-layer-${alertAreas.features.length}`} 
+              data={alertAreas} 
+              style={alertAreaStyle}
+              interactive={false} // Para que no bloquee los clics en los depósitos
+            />
+          )}
+
+          {/* CAPA DE INCENDIOS ORIGINAL */}
+          {burnedAreas && burnedAreas.features && burnedAreas.features.length > 0 && (
+            <GeoJSON 
+              key={`burned-layer-${burnedAreas.features.length}`} 
               data={burnedAreas} 
               style={burnedAreaStyle}
               onEachFeature={(feature, layer) => {
@@ -117,7 +168,7 @@ const MapView: React.FC<MapViewProps> = ({ tanks, onSelectTank }) => {
             />
           )}
 
-          {/* Capa de Depósitos Oficiales */}
+          {/* CAPA DE DEPÓSITOS */}
           {tanks.map((tank) => (
             <Marker 
               key={tank.id}
@@ -134,19 +185,18 @@ const MapView: React.FC<MapViewProps> = ({ tanks, onSelectTank }) => {
             </Marker>
           ))}
 
-          {/* 5. NUEVA CAPA: Reportes Vecinales (Círculos Azules) */}
+          {/* CAPA DE REPORTES VECINALES */}
           {reports.map((report) => {
-            // Ignoramos los reportes que no tienen coordenadas válidas (0.0 es lo que guarda Influx por defecto si no hay datos)
             if (!report.lat || !report.lng || (report.lat === 0 && report.lng === 0)) return null;
 
             return (
               <CircleMarker
                 key={report.id}
                 center={[report.lat, report.lng]}
-                radius={8} // Tamaño del círculo
+                radius={8}
                 pathOptions={{ 
-                  fillColor: '#3b82f6', // Azul Tailwind (blue-500)
-                  color: '#1e3a8a',     // Borde azul oscuro (blue-900)
+                  fillColor: '#3b82f6',
+                  color: '#1e3a8a',
                   weight: 2, 
                   fillOpacity: 0.9 
                 }}
@@ -170,7 +220,7 @@ const MapView: React.FC<MapViewProps> = ({ tanks, onSelectTank }) => {
           })}
         </MapContainer>
 
-        {/* Leyenda flotante sobre el mapa */}
+        {/* LEYENDA */}
         <div className="absolute bottom-6 right-6 bg-white/90 backdrop-blur-sm p-4 rounded-2xl shadow-xl border border-slate-200 z-[400]">
           <p className="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">Leyenda</p>
           
@@ -179,7 +229,12 @@ const MapView: React.FC<MapViewProps> = ({ tanks, onSelectTank }) => {
               <div className="w-4 h-4 bg-[#1a1a1a] border-2 border-[#7f1d1d] opacity-70" />
               <span className="text-slate-700">Área Incendiada</span>
             </div>
-            {/* 6. Añadido a la leyenda */}
+            
+            <div className="flex items-center space-x-2 text-sm">
+              <div className="w-4 h-4 bg-[#fb923c] border-2 border-[#ea580c] opacity-50" />
+              <span className="text-slate-700">Zona de Alerta (2km)</span>
+            </div>
+
             <div className="flex items-center space-x-2 text-sm">
               <div className="w-4 h-4 rounded-full bg-blue-500 border border-blue-900 opacity-90" />
               <span className="text-slate-700 font-medium">Reporte Vecinal</span>
@@ -201,7 +256,6 @@ const MapView: React.FC<MapViewProps> = ({ tanks, onSelectTank }) => {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );
