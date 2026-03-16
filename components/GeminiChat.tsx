@@ -1,7 +1,5 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Loader2, Sparkles } from 'lucide-react';
-import { GoogleGenAI } from '@google/genai';
 import { ChatMessage, WaterTank } from '../types';
 
 interface GeminiChatProps {
@@ -10,12 +8,13 @@ interface GeminiChatProps {
 
 const GeminiChat: React.FC<GeminiChatProps> = ({ tanks }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: '¡Hola! Soy el asistente inteligente de AquaVigo. Puedo ayudarte a analizar los datos de los depósitos, detectar anomalías o responder dudas de los vecinos. ¿En qué puedo ayudarte hoy?' }
+    { role: 'assistant', content: '¡Hola! Soy el asistente inteligente de AugaCalidade. Puedo ayudarte a analizar los datos de los depósitos, detectar anomalías o responder dudas de los vecinos. ¿En qué puedo ayudarte hoy?' }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Auto-scroll hacia abajo cuando hay mensajes nuevos
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -31,41 +30,36 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ tanks }) => {
     setIsLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-      const model = 'gemini-3-flash-preview';
+      // 1. "Adelgazamos" los datos: Solo enviamos la foto actual, nada de históricos gigantes
+      const resumenDepositos = tanks.map(t => ({
+        name: t.name, 
+        status: t.status, 
+        lastReading: t.lastReading 
+      }));
 
-      const systemInstruction = `
-        Eres un experto ingeniero hidráulico y asistente de comunicación para comunidades de aguas en Galicia.
-        Contexto del sistema:
-        - El sistema usa sensores NB-IoT para medir turbidez, pH, TDS, nivel y caudal.
-        - El objetivo principal es detectar sedimentos post-incendio forestal.
-        - Tienes acceso a los siguientes depósitos y sus datos actuales:
-        ${JSON.stringify(tanks.map(t => ({ name: t.name, status: t.status, reading: t.lastReading })), null, 2)}
-
-        Reglas:
-        1. Sé profesional pero cercano (estilo gallego amable).
-        2. Si se pregunta por un depósito específico, analiza sus niveles de turbidez.
-        3. Si la turbidez es > 5 NTU, advierte que el agua puede no ser potable según normativa.
-        4. Explica conceptos técnicos de forma sencilla (ej. qué es el pH o el TDS).
-        5. Sugiere acciones de mantenimiento si ves valores anómalos.
-      `;
-
-      const response = await ai.models.generateContent({
-        model,
-        contents: [
-          { role: 'user', parts: [{ text: userMessage }] }
-        ],
-        config: {
-          systemInstruction,
-          temperature: 0.7,
-        }
+      // 2. Llamada segura a nuestro propio backend con los datos filtrados
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          mensaje: userMessage,
+          contextoDepositos: resumenDepositos
+        })
       });
 
-      const assistantContent = response.text || 'Lo siento, he tenido un problema procesando tu consulta.';
-      setMessages(prev => [...prev, { role: 'assistant', content: assistantContent }]);
+      if (!response.ok) {
+        throw new Error('Error en la respuesta del servidor');
+      }
+
+      const data = await response.json();
+      
+      // Opcional: Ver en consola la "magia" de los ítems detectados
+      console.log("🧠 Análisis de la IA:", data.items);
+      
+      setMessages(prev => [...prev, { role: 'assistant', content: data.respuesta }]);
     } catch (error) {
-      console.error('Error calling Gemini:', error);
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Hubo un error al conectar con el servidor de IA. Por favor, inténtalo de nuevo.' }]);
+      console.error('Error llamando al backend:', error);
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Hubo un error de conexión con el servidor. Por favor, inténtalo de nuevo más tarde.' }]);
     } finally {
       setIsLoading(false);
     }
