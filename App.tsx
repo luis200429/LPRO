@@ -19,6 +19,7 @@ import NotificationBell from './components/NotificationBell';
 import logo from './fotos/logo.png';
 
 const BACKEND_URL = '';
+const [menuOpen, setMenuOpen] = useState(false);
 
 const MainApp: React.FC = () => {
   const navigate = useNavigate();

@@ -27,6 +27,7 @@ const UserReports: React.FC<UserReportsProps> = ({ tanks }) => {
   const [reports, setReports] = useState<UserReport[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [newReport, setNewReport] = useState({
     ubicacion: '', 
     userName: '',
@@ -101,28 +102,29 @@ const UserReports: React.FC<UserReportsProps> = ({ tanks }) => {
   // 2. ENVIAR el reporte a la base de datos 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Si marcó anónimo o dejó el nombre vacío, lo forzamos a Anónimo
+    if (isSubmitting) return; // ← cortocircuito si ya está enviando
+    setIsSubmitting(true);    // ← bloqueamos
+  
     const finalUserName = newReport.isAnonymous || !newReport.userName.trim() 
       ? 'Usuario Anónimo' 
       : newReport.userName;
-
-      const reportData = {
-        tankId: newReport.ubicacion, 
-        userName: finalUserName,
-        description: newReport.description,
-        type: newReport.type,
-        lat: newReport.lat,  
-        lng: newReport.lng   
-      };
-
+  
+    const reportData = {
+      tankId: newReport.ubicacion, 
+      userName: finalUserName,
+      description: newReport.description,
+      type: newReport.type,
+      lat: newReport.lat,  
+      lng: newReport.lng   
+    };
+  
     try {
       const response = await fetch(`${BACKEND_URL}/api/reportes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(reportData)
       });
-
+  
       if (response.ok) {
         const nuevoReporteVisual: UserReport = {
           id: Date.now().toString(),
@@ -134,18 +136,17 @@ const UserReports: React.FC<UserReportsProps> = ({ tanks }) => {
           lat: reportData.lat,
           lng: reportData.lng
         };
-
         setReports(prevReports => [nuevoReporteVisual, ...prevReports]);
-        
-        // Limpiamos y cerramos
         setShowModal(false);
-        setNewReport({ ubicacion: '', userName: '', isAnonymous: false, type: 'color', description: '' });
+        setNewReport({ ubicacion: '', userName: '', isAnonymous: false, type: 'color', description: '', lat: null, lng: null });
       } else {
         alert("Error al guardar el reporte");
       }
     } catch (error) {
       console.error("Error enviando reporte:", error);
       alert("Error de conexión al guardar el reporte");
+    } finally {
+      setIsSubmitting(false); // ← desbloqueamos siempre, tanto si va bien como si falla
     }
   };
 
@@ -174,42 +175,49 @@ const UserReports: React.FC<UserReportsProps> = ({ tanks }) => {
   };
 
   // Función que permita votar en los reportes
- const handleVote = async (report: UserReport) => {
-  // 1. El Portero: Comprobamos si ya votó
-  if (votedReports.includes(report.id)) {
-    alert("Ya has validado esta incidencia anteriormente.");
-    return;
-  }
-
-  // 2. Guardamos el voto en la memoria del navegador
-  const nuevosVotosLocales = [...votedReports, report.id];
-  setVotedReports(nuevosVotosLocales);
-  localStorage.setItem('mis_votos', JSON.stringify(nuevosVotosLocales));
-
-  // 3. Actualización optimista en pantalla
-  setReports(prevReports => prevReports.map(r => 
-    r.id === report.id ? { ...r, votes: (r.votes || 1) + 1 } : r
-  ));
-
-  try {
-    // 4. Avisamos al backend
-    await fetch(`${BACKEND_URL}/api/reportes/${encodeURIComponent(report.id)}/votar`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tankId: report.tankId,
-        type: report.type,
-        userName: report.userName,
-        description: report.description,
-        lat: report.lat,
-        lng: report.lng,
-        currentVotes: report.votes || 1
-      })
-    });
-  } catch (error) {
-    console.error("Error al votar:", error);
-  }
-};
+  const handleVote = async (report: UserReport) => {
+    const yaVotado = votedReports.includes(report.id);
+  
+    // Actualización optimista: toggle en local
+    if (yaVotado) {
+      const nuevosVotos = votedReports.filter(id => id !== report.id);
+      setVotedReports(nuevosVotos);
+      localStorage.setItem('mis_votos', JSON.stringify(nuevosVotos));
+      setReports(prev => prev.map(r =>
+        r.id === report.id ? { ...r, votes: Math.max((r.votes || 1) - 1, 0) } : r
+      ));
+    } else {
+      const nuevosVotos = [...votedReports, report.id];
+      setVotedReports(nuevosVotos);
+      localStorage.setItem('mis_votos', JSON.stringify(nuevosVotos));
+      setReports(prev => prev.map(r =>
+        r.id === report.id ? { ...r, votes: (r.votes || 1) + 1 } : r
+      ));
+    }
+  
+    try {
+      await fetch(`${BACKEND_URL}/api/reportes/${encodeURIComponent(report.id)}/votar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tankId: report.tankId,
+          type: report.type,
+          userName: report.userName,
+          description: report.description,
+          lat: report.lat,
+          lng: report.lng,
+          currentVotes: report.votes || 1,
+          accion: yaVotado ? 'restar' : 'sumar'  // ← nuevo campo
+        })
+      });
+    } catch (error) {
+      console.error("Error al votar:", error);
+      // Si falla el servidor, revertimos el optimismo
+      setReports(prev => prev.map(r =>
+        r.id === report.id ? { ...r, votes: report.votes } : r
+      ));
+    }
+  };
 
   // Lógica de filtrado y reordenación
   const filteredReports = reports.filter(report => {
@@ -495,13 +503,23 @@ const UserReports: React.FC<UserReportsProps> = ({ tanks }) => {
               </div>
 
               <div className="pt-2">
-                <button 
-                  type="submit"
-                  className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 flex items-center justify-center space-x-2"
-                >
-                  <Droplets className="w-5 h-5" />
-                  <span>Enviar Reporte</span>
-                </button>
+              <button 
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 flex items-center justify-center space-x-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Enviando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Droplets className="w-5 h-5" />
+                    <span>Enviar Reporte</span>
+                  </>
+                )}
+              </button>
               </div>
             </form>
           </div>

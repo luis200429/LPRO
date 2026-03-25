@@ -16,7 +16,7 @@ const GRAFANA_DASHBOARDS: Record<string, { id: string, slug: string }> = {
   'cm_vincios': { id: 'adqh2j2', slug: 'augacalidade-vincios' },
 };
 
-type FilterMode = '24h' | 'custom';
+type FilterMode = '24h' | '7d' | '30d' | 'custom';
 
 const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
   const [filterMode, setFilterMode] = useState<FilterMode>('24h');
@@ -30,10 +30,12 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
   const getGrafanaUrl = (panelId: string) => {
     let from = 'now-24h';
     let to = 'now';
-
-    if (filterMode === 'custom') {
+    
+    if (filterMode === '7d')    { from = 'now-7d'; }
+    else if (filterMode === '30d')   { from = 'now-30d'; }
+    else if (filterMode === 'custom') {
       from = new Date(`${startDate}T00:00:00Z`).getTime().toString();
-      to = new Date(`${endDate}T23:59:59Z`).getTime().toString();
+      to   = new Date(`${endDate}T23:59:59Z`).getTime().toString();
     }
 
     // Usamos el ID y SLUG dinámicos sacados del mapeo para los iframes
@@ -114,18 +116,22 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
           {/* FILTRO DE FECHAS */}
           <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex space-x-2 w-full sm:w-auto">
-              <button 
-                onClick={() => setFilterMode('24h')} 
-                className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors ${filterMode === '24h' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-              >
-                Últimas 24h
-              </button>
-              <button 
-                onClick={() => setFilterMode('custom')} 
-                className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors ${filterMode === 'custom' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-              >
-                Personalizado
-              </button>
+            <button onClick={() => setFilterMode('24h')}
+              className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors ${filterMode === '24h' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+              Últimas 24h
+            </button>
+            <button onClick={() => setFilterMode('7d')}
+              className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors ${filterMode === '7d' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+              Última semana
+            </button>
+            <button onClick={() => setFilterMode('30d')}
+              className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors ${filterMode === '30d' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+              Último mes
+            </button>
+            <button onClick={() => setFilterMode('custom')}
+              className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors ${filterMode === 'custom' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+              Personalizado
+            </button>
             </div>
             
             {filterMode === 'custom' && (
@@ -140,6 +146,20 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
           {/* GRID DE GRÁFICAS */}
           <div className="grid grid-cols-1 gap-6">
             
+            {/* GRÁFICA 1: ICA (panel-1) */}
+            <div className="bg-white p-2 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+              <h3 className="p-4 font-bold text-slate-800 flex items-center">
+                <Gauge className="w-5 h-5 mr-2 text-blue-500" /> Histórico de ICA
+              </h3>
+              <div className="h-[300px] w-full bg-slate-50 rounded-b-2xl overflow-hidden">
+                <iframe 
+                  key={getGrafanaUrl('panel-13')} 
+                  src={getGrafanaUrl('panel-13')} 
+                  width="100%" height="100%" frameBorder="0" title="ICA">
+                </iframe>
+              </div>
+            </div>
+
             {/* GRÁFICA 1: TURBIDEZ (panel-1) */}
             <div className="bg-white p-2 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
               <h3 className="p-4 font-bold text-slate-800 flex items-center">

@@ -39,6 +39,7 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ tanks }) => {
 
     try {
       const resumenDepositos = tanks.map(t => ({
+        id: t.id,
         name: t.name, 
         status: t.status, 
         lastReading: t.lastReading 
@@ -49,7 +50,8 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ tanks }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           mensaje: textoAEnviar.trim(),
-          contextoDepositos: resumenDepositos
+          contextoDepositos: resumenDepositos,
+          historial: messages
         })
       });
 
