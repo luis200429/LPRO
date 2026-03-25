@@ -8,8 +8,7 @@ interface TankDetailsProps {
 }
 
 // Configuración base de Grafana
-const GRAFANA_BASE_URL = 'http://34.73.211.235:3001'; 
-
+const GRAFANA_BASE_URL = 'https://augacalidade.duckdns.org/grafana';
 // Mapeo dinámico: Relacionamos el ID del tanque con su propio Dashboard en Grafana
 const GRAFANA_DASHBOARDS: Record<string, { id: string, slug: string }> = {
   'cm_zamans': { id: 'ad9rthz', slug: 'augacalidade-zamans' },
