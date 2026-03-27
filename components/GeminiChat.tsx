@@ -67,8 +67,8 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ tanks, messages, setMessages })
   };
 
   return (
-    <div className="h-full flex flex-col bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-      {/* Header */}
+    <div className="flex flex-col bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden" 
+     style={{ height: 'calc(100vh - 8rem)' }}>      {/* Header */}
       <div className="px-6 py-4 bg-blue-600 text-white flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className="bg-blue-400 p-2 rounded-xl">
@@ -132,17 +132,17 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ tanks, messages, setMessages })
       <div className="p-4 bg-white border-t">
         {/* Botones de sugerencias */}
         {messages.length === 1 && !isLoading && (
-          <div className="flex flex-wrap gap-2 mb-3">
-            {SUGGESTENCIAS.map((sug, index) => (
-              <button
-                key={index}
-                onClick={() => handleSend(sug)}
-                className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-full transition-colors flex items-center"
-              >
-                <MessageSquare className="w-3 h-3 mr-1" /> {sug}
-              </button>
-            ))}
-          </div>
+          <div className="flex gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
+          {SUGGESTENCIAS.map((sug, index) => (
+            <button
+              key={index}
+              onClick={() => handleSend(sug)}
+              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-full transition-colors flex items-center flex-shrink-0"
+            >
+              <MessageSquare className="w-3 h-3 mr-1" /> {sug}
+            </button>
+          ))}
+        </div>
         )}
 
         <div className="flex items-center space-x-2">
