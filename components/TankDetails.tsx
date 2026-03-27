@@ -42,7 +42,7 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
     return `${GRAFANA_BASE_URL}/d-solo/${dashboardInfo.id}/${dashboardInfo.slug}?orgId=1&from=${from}&to=${to}&timezone=browser&lang=es&panelId=${panelId}&__feature.dashboardSceneSolo=true`;
   }
   
-  const currentLevel = tank.lastReading?.level || tank.lastReading?.water_level || 0;
+  const currentLevel = tank.lastReading?.level || tank.lastReading?.level || 0;
 
   // 🔥 ICA LIMPIO Y SEGURO: Lo forzamos a Número y confiamos en 'ica'
   const currentIca = Number(tank.lastReading?.ica) || 0;
@@ -79,7 +79,7 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
               <span className="text-sm">{tank.location?.address || 'Ubicación desconocida'}</span>
             </div>
             
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex justify-between p-3 bg-blue-50 rounded-2xl font-bold text-blue-700">
                 <span className="flex items-center gap-2"><Droplet size={18}/> Nivel Actual</span>
                 <span>{currentLevel} %</span>
@@ -160,6 +160,8 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
               </div>
             </div>
 
+            <div className="border-t border-slate-100 my-1" />
+
             {/* GRÁFICA 1: TURBIDEZ (panel-1) */}
             <div className="bg-white p-2 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
               <h3 className="p-4 font-bold text-slate-800 flex items-center">
@@ -173,6 +175,8 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
                 </iframe>
               </div>
             </div>
+
+            <div className="border-t border-slate-100 my-1" />
 
             {/* GRÁFICA 2: pH (panel-2) */}
             <div className="bg-white p-2 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
@@ -188,6 +192,8 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
               </div>
             </div>
 
+            <div className="border-t border-slate-100 my-1" />
+
             {/* GRÁFICA 3: TEMPERATURA (panel-3) */}
             <div className="bg-white p-2 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
               <h3 className="p-4 font-bold text-slate-800 flex items-center">
@@ -201,6 +207,8 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
                 </iframe>
               </div>
             </div>
+
+            <div className="border-t border-slate-100 my-1" />
 
             {/* GRÁFICA 4: CONDUCTIVIDAD/TDS (panel-4) */}
             <div className="bg-white p-2 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useParams, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useParams, useLocation, Link } from 'react-router-dom';
 import { 
   LayoutDashboard, Map as MapIcon, MessageSquare, 
   AlertTriangle, Wifi, Menu, X
@@ -10,9 +10,8 @@ import MapView from './components/MapView';
 import GeminiChat from './components/GeminiChat';
 import UserReports from './components/UserReports';
 import TankDetails from './components/TankDetails';
-import { WaterTank } from './types';
 import { MOCK_TANKS } from './constants';
-import { Link } from 'react-router-dom';
+import { WaterTank, ChatMessage } from './types';
 import NotificationBell from './components/NotificationBell';
 
 import logo from './fotos/logo.png';
@@ -36,7 +35,9 @@ const TankDetailsWrapper: React.FC<TankDetailsWrapperProps> = ({ tanks, onBack }
 const MainApp: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    { role: 'assistant', content: '¡Hola! Soy el asistente inteligente de AugaCalidade. Puedo ayudarte a analizar los datos de los manantiales, detectar anomalías por lluvias o responder dudas. ¿En qué puedo ayudarte hoy?' }
+  ]);  
   const [tanks, setTanks] = useState<WaterTank[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -184,7 +185,7 @@ const MainApp: React.FC = () => {
             <img src={logo} alt="AugaCalidade" className="h-9 w-auto object-contain" />
           </Link>
           <div className="hidden sm:block h-6 w-px bg-slate-200" />
-          <span className="hidden sm:block text-sm font-semibold text-slate-400">
+          <span className="hidden sm:block text-sm font-semibold text-slate-600">
             {currentPageLabel}
           </span>
         </div>
@@ -284,7 +285,7 @@ const MainApp: React.FC = () => {
         <Routes>
           <Route path="/"         element={<Dashboard   tanks={tanks} onSelectTank={handleSelectTank} />} />
           <Route path="/map"      element={<MapView     tanks={tanks} onSelectTank={handleSelectTank} />} />
-          <Route path="/chat"     element={<GeminiChat  tanks={tanks} />} />
+          <Route path="/chat" element={<GeminiChat tanks={tanks} messages={chatMessages} setMessages={setChatMessages} />} />
           <Route path="/reports"  element={<UserReports tanks={tanks} />} />
           <Route path="/tank/:id" element={<TankDetailsWrapper tanks={tanks} onBack={() => navigate('/')} />} />
         </Routes>

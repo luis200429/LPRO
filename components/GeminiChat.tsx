@@ -5,6 +5,8 @@ import { ChatMessage, WaterTank } from '../types';
 
 interface GeminiChatProps {
   tanks: WaterTank[];
+  messages: ChatMessage[];
+  setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
 }
 
 // Sugerencias de preguntas para romper el hielo
@@ -14,10 +16,7 @@ const SUGGESTENCIAS = [
   "⚠️ ¿Hay alguna alerta en los manantiales?"
 ];
 
-const GeminiChat: React.FC<GeminiChatProps> = ({ tanks }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: '¡Hola! Soy el asistente inteligente de AugaCalidade. Puedo ayudarte a analizar los datos de los manantiales, detectar anomalías por lluvias o responder dudas. ¿En qué puedo ayudarte hoy?' }
-  ]);
+const GeminiChat: React.FC<GeminiChatProps> = ({ tanks, messages, setMessages }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -85,6 +84,16 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ tanks }) => {
       </div>
 
       {/* Messages */}
+      {messages.length === 1 && !isLoading && (
+        <div className="flex flex-col items-center justify-center h-full text-center py-12 space-y-3">
+          <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center">
+            <Bot className="w-8 h-8 text-blue-500" />
+          </div>
+          <p className="text-slate-400 text-sm max-w-xs">
+            Pregúntame sobre la calidad del agua, alertas activas o posibles riesgos en la zaona que desees
+          </p>
+        </div>
+      )}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50">
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>

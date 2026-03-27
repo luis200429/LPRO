@@ -340,8 +340,14 @@ const UserReports: React.FC<UserReportsProps> = ({ tanks }) => {
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center space-x-3">
-                  <div className="bg-slate-100 p-2 rounded-lg">
-                    <MessageCircle className="w-5 h-5 text-slate-500" />
+                <div className={`p-2 rounded-lg ${
+                    report.type === 'leak' 
+                      ? 'bg-red-100 text-red-500' 
+                      : report.type === 'color' || report.type === 'smell'
+                      ? 'bg-amber-100 text-amber-500'
+                      : 'bg-slate-100 text-slate-500'
+                  }`}>
+                    <MessageCircle className="w-5 h-5" />
                   </div>
                   <div>
                     <h4 className="font-bold text-slate-900">{report.userName}</h4>

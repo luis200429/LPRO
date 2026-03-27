@@ -66,24 +66,48 @@ const Dashboard: React.FC<DashboardProps> = ({ tanks, onSelectTank }) => {
   return (
       <div className="space-y-6">
       {/* Stats Summary - AJUSTADO A 2 COLUMNAS COMO PEDISTE */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-slate-500">Total Depósitos</p>
-            <p className="text-3xl font-bold text-slate-900">{tanks.length}</p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center space-x-4">
+          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl flex-shrink-0">
+            <Droplets className="w-5 h-5" />
           </div>
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-            <Droplets className="w-6 h-6" />
+          <div>
+            <p className="text-xs font-medium text-slate-400">Total Depósitos</p>
+            <p className="text-2xl font-bold text-slate-900">{tanks.length}</p>
           </div>
         </div>
-        
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-slate-500">Alertas Activas</p>
-            <p className="text-3xl font-bold text-slate-900">{activeAlertsCount}</p>
+
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center space-x-4">
+          <div className="p-3 bg-amber-50 text-amber-600 rounded-xl flex-shrink-0">
+            <AlertTriangle className="w-5 h-5" />
           </div>
-          <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
-            <AlertTriangle className="w-6 h-6" />
+          <div>
+            <p className="text-xs font-medium text-slate-400">Alertas Activas</p>
+            <p className="text-2xl font-bold text-slate-900">{activeAlertsCount}</p>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center space-x-4">
+          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl flex-shrink-0">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-xs font-medium text-slate-400">Óptimos</p>
+            <p className="text-2xl font-bold text-slate-900">
+              {tanks.filter(t => t.status === 'optimal').length}
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center space-x-4">
+          <div className="p-3 bg-red-50 text-red-600 rounded-xl flex-shrink-0">
+            <AlertCircle className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-xs font-medium text-slate-400">Críticos</p>
+            <p className="text-2xl font-bold text-slate-900">
+              {tanks.filter(t => t.status === 'critical').length}
+            </p>
           </div>
         </div>
       </div>
@@ -96,8 +120,8 @@ const Dashboard: React.FC<DashboardProps> = ({ tanks, onSelectTank }) => {
           const dbData = tank.history && tank.history.length > 0 ? tank.history[0] : null;
 
           const rawIca = dbData 
-            ? (dbData.ica ?? dbData.Ica ?? dbData.ICA ?? 0) 
-            : (tank.lastReading.ica ?? tank.lastReading.Ica ?? tank.lastReading.ICA ?? 0);
+            ? (dbData.ica ?? dbData.ica ?? dbData.ica ?? 0) 
+            : (tank.lastReading.ica ?? tank.lastReading.ica ?? tank.lastReading.ica ?? 0);
 
           const safeIca = Number(rawIca);
           
@@ -115,8 +139,8 @@ const Dashboard: React.FC<DashboardProps> = ({ tanks, onSelectTank }) => {
             conductivity: tank.lastReading.conductivity,
             level: tank.lastReading.level,
             temperature: tank.lastReading.temperature,
-            Ica: tank.lastReading.Ica || tank.lastReading.ica || 0, // 🔥 Capturamos el Ica
-            timestamp: String(tank.lastReading.timestamp).length === 10 ? tank.lastReading.timestamp * 1000 : tank.lastReading.timestamp
+            Ica: tank.lastReading.ica || tank.lastReading.ica || 0, // 🔥 Capturamos el Ica
+            timestamp: String(tank.lastReading.timestamp).length === 10 ? Number(tank.lastReading.timestamp) * 1000 : tank.lastReading.timestamp
           };
 
           // 🔥 Obtenemos el estado dinámico para este depósito en concreto
