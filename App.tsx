@@ -15,6 +15,7 @@ import { WaterTank, ChatMessage } from './types';
 import NotificationBell from './components/NotificationBell';
 
 import logo from './fotos/logo.png';
+import logoDark from './fotos/logo-dark.png'; 
 
 const BACKEND_URL = '';
 
@@ -157,7 +158,19 @@ const MainApp: React.FC = () => {
         {/* COL 1 — Logo + título */}
         <div className="flex items-center space-x-3">
           <Link to="/" className="flex items-center hover:opacity-80 active:scale-95 transition-all">
-            <img src={logo} alt="AugaCalidade" className="h-11 w-auto object-contain" />
+            {/* 2. Muestra el logo claro y ocúltalo en modo oscuro */}
+            <img 
+              src={logo} 
+              alt="AugaCalidade" 
+              className="h-11 w-auto object-contain dark:hidden" 
+            />
+            
+            {/* 3. Muestra el logo oscuro solo en modo oscuro */}
+            <img 
+              src={logoDark} 
+              alt="AugaCalidade" 
+              className="h-11 w-auto object-contain hidden dark:block" 
+            />
           </Link>
           <div className="hidden sm:block h-6 w-px bg-slate-200 dark:bg-slate-600" />
           <span className="hidden sm:block text-lg font-semibold text-slate-600 dark:text-slate-300">
@@ -183,7 +196,7 @@ const MainApp: React.FC = () => {
                 }`}
               >
                 <item.icon className="w-5 h-5" />
-                <span>{item.label}</span>
+                <span className="whitespace-nowrap">{item.label}</span>
               </button>
             );
           })}
