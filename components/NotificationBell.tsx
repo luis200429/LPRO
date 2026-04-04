@@ -23,9 +23,9 @@ const getStatusConfig = (status: string) => {
       {/* Botón de la Campana */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-slate-500 hover:text-blue-600 transition-colors focus:outline-none"
+        className="relative p-2 text-slate-500 hover:text-blue-700 transition-colors focus:outline-none"
       >
-        <Bell className="w-6 h-6" />
+        <Bell className="w-7 h-7" />
         {alerts.length > 0 && (
           <span className="absolute top-1 right-1 flex h-4 w-4">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>

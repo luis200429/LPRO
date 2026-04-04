@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+/* 1. Nos aseguramos de que escanee toda tu carpeta raíz y componentes */
+@source "./";
+
+/* 2. La regla definitiva para el modo oscuro en Tailwind v4 */
+@custom-variant dark (.dark &);

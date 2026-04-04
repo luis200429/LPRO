@@ -25,9 +25,9 @@ const burnedAreaStyle = {
 };
 
 const alertAreaStyle = {
-  color: '#ea580c', // Naranja oscuro para el borde
+  color: '#ea580c', 
   weight: 2,
-  fillColor: '#fb923c', // Naranja claro para el relleno
+  fillColor: '#fb923c', 
   fillOpacity: 0.3,
   dashArray: '5, 5'
 };
@@ -39,7 +39,7 @@ const createCustomIcon = (status: 'optimal' | 'warning' | 'critical') => {
 
   return L.divIcon({
     className: 'custom-icon',
-    html: `<div class="w-6 h-6 rounded-full border-2 border-white shadow-md ${colorClass}"></div>`,
+    html: `<div class="w-6 h-6 rounded-full border-2 border-white dark:border-slate-800 shadow-md ${colorClass} transition-colors"></div>`,
     iconSize: [24, 24],
     iconAnchor: [12, 12],
   });
@@ -69,10 +69,8 @@ const MapView: React.FC<MapViewProps> = ({ tanks, onSelectTank }) => {
         if (data && data.features && Array.isArray(data.features)) {
           const validBufferedFeatures: any[] = [];
 
-          // Procesamos cada incendio uno por uno
           data.features.forEach((feature: any) => {
             try {
-              // Verificamos que tenga una geometría válida antes de pasarlo a Turf
               if (feature && feature.geometry && feature.geometry.coordinates) {
                 const buffered = buffer(feature, 2, { units: 'kilometers' });
                 if (buffered) {
@@ -80,12 +78,10 @@ const MapView: React.FC<MapViewProps> = ({ tanks, onSelectTank }) => {
                 }
               }
             } catch (err) {
-              // Si este polígono está corrupto, lo ignoramos y seguimos
               console.warn("Polígono ignorado por geometría inválida:", feature.properties?.name || 'Desconocido');
             }
           });
 
-          // Si logramos rescatar polígonos válidos, actualizamos el estado
           if (validBufferedFeatures.length > 0) {
             setAlertAreas({
               type: "FeatureCollection",
@@ -122,19 +118,40 @@ const MapView: React.FC<MapViewProps> = ({ tanks, onSelectTank }) => {
 
   return (
     <div className="h-full flex flex-col space-y-4">
-      <div className="bg-blue-50 p-4 rounded-2xl flex items-center justify-between border border-blue-100">
+      {/* TRUCO PROFESIONAL: Estilos para invertir el mapa de Leaflet y sus popups en modo oscuro */}
+      <style>{`
+        .dark .leaflet-tile-pane {
+          filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+        }
+        .dark .leaflet-popup-content-wrapper, .dark .leaflet-popup-tip {
+          background-color: #1e293b;
+          color: #f1f5f9;
+        }
+        .dark .leaflet-tooltip {
+          background-color: #1e293b;
+          color: #f1f5f9;
+          border-color: #334155;
+        }
+        .dark .leaflet-tooltip::before {
+          border-top-color: #1e293b;
+        }
+      `}</style>
+
+      {/* BANNER SUPERIOR */}
+      <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-2xl flex items-center justify-between border border-blue-100 dark:border-blue-800/50 transition-colors duration-300">
         <div className="flex items-center space-x-3">
-          <Info className="text-blue-600 w-5 h-5 flex-shrink-0" />
-          <p className="text-sm text-blue-800">
+          <Info className="text-blue-600 dark:text-blue-400 w-5 h-5 flex-shrink-0" />
+          <p className="text-sm text-blue-800 dark:text-blue-300">
             Monitorización de arrastre de cenizas e incidencias vecinales.
-            {isLoadingGeo && <span className="ml-2 font-bold animate-pulse text-blue-600">Cargando mapa...</span>}
-            {geoError && <span className="ml-2 font-bold text-red-600">{geoError}</span>}
+            {isLoadingGeo && <span className="ml-2 font-bold animate-pulse text-blue-600 dark:text-blue-400">Cargando mapa...</span>}
+            {geoError && <span className="ml-2 font-bold text-red-600 dark:text-red-400">{geoError}</span>}
           </p>
         </div>
       </div>
 
-      <div className="flex-1 rounded-3xl overflow-hidden border border-slate-300 min-h-[500px] relative shadow-inner z-0">
-        <MapContainer center={centerPosition} zoom={7} scrollWheelZoom={true} className="h-full w-full">
+      {/* CONTENEDOR DEL MAPA */}
+      <div className="flex-1 rounded-3xl overflow-hidden border border-slate-300 dark:border-slate-700 min-h-[500px] relative shadow-inner z-0 transition-colors duration-300">
+        <MapContainer center={centerPosition} zoom={7} scrollWheelZoom={true} className="h-full w-full bg-slate-50 dark:bg-slate-900">
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -146,7 +163,7 @@ const MapView: React.FC<MapViewProps> = ({ tanks, onSelectTank }) => {
               key={`alert-layer-${alertAreas.features.length}`} 
               data={alertAreas} 
               style={alertAreaStyle}
-              interactive={false} // Para que no bloquee los clics en los depósitos
+              interactive={false} 
             />
           )}
 
@@ -159,9 +176,9 @@ const MapView: React.FC<MapViewProps> = ({ tanks, onSelectTank }) => {
               onEachFeature={(feature, layer) => {
                 const nombre = feature.properties?.name || feature.properties?.COUNTRY || 'Área Incendiada';
                 layer.bindPopup(`
-                  <div class="p-1 text-sm">
-                    <strong>Incendio detectado</strong><br/>
-                    Detalle: ${nombre}
+                  <div class="p-1 text-sm dark:text-white">
+                    <strong class="dark:text-white">Incendio detectado</strong><br/>
+                    <span class="dark:text-slate-300">Detalle: ${nombre}</span>
                   </div>
                 `);
               }}
@@ -178,8 +195,8 @@ const MapView: React.FC<MapViewProps> = ({ tanks, onSelectTank }) => {
             >
               <Tooltip direction="top" offset={[0, -15]} opacity={1}>
                 <div className="min-w-[120px] text-center">
-                  <p className="font-bold text-slate-800 text-sm">{tank.name}</p>
-                  <p className="text-[10px] text-slate-500 mt-1">{tank.location.address}</p>
+                  <p className="font-bold text-slate-800 dark:text-white text-sm">{tank.name}</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">{tank.location.address}</p>
                 </div>
               </Tooltip>
             </Marker>
@@ -204,14 +221,14 @@ const MapView: React.FC<MapViewProps> = ({ tanks, onSelectTank }) => {
                 <Popup>
                   <div className="p-1 min-w-[150px]">
                     <div className="flex items-center space-x-1 mb-2">
-                      <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
+                      <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
                         Incidencia
                       </span>
                     </div>
-                    <strong className="block text-sm text-slate-800">{report.type}</strong>
-                    <p className="text-xs text-slate-600 italic mt-1">"{report.description}"</p>
-                    <p className="text-[10px] text-slate-400 mt-2 border-t pt-1">
-                      Por: <b>{report.userName}</b>
+                    <strong className="block text-sm text-slate-800 dark:text-white">{report.type}</strong>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 italic mt-1">"{report.description}"</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 border-t dark:border-slate-700 pt-1">
+                      Por: <b className="dark:text-slate-300">{report.userName}</b>
                     </p>
                   </div>
                 </Popup>
@@ -221,38 +238,38 @@ const MapView: React.FC<MapViewProps> = ({ tanks, onSelectTank }) => {
         </MapContainer>
 
         {/* LEYENDA */}
-        <div className="absolute bottom-6 right-6 bg-white/90 backdrop-blur-sm p-4 rounded-2xl shadow-xl border border-slate-200 z-[400]">
-          <p className="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">Leyenda</p>
+        <div className="absolute bottom-6 right-6 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm p-4 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 z-[400] transition-colors duration-300">
+          <p className="text-xs font-bold text-slate-400 dark:text-slate-500 mb-3 uppercase tracking-wider">Leyenda</p>
           
-          <div className="space-y-3 mb-3 pb-3 border-b border-slate-200">
+          <div className="space-y-3 mb-3 pb-3 border-b border-slate-200 dark:border-slate-700">
             <div className="flex items-center space-x-2 text-sm">
               <div className="w-4 h-4 bg-[#1a1a1a] border-2 border-[#7f1d1d] opacity-70" />
-              <span className="text-slate-700">Área Incendiada</span>
+              <span className="text-slate-700 dark:text-slate-300">Área Incendiada</span>
             </div>
             
             <div className="flex items-center space-x-2 text-sm">
               <div className="w-4 h-4 bg-[#fb923c] border-2 border-[#ea580c] opacity-50" />
-              <span className="text-slate-700">Zona de Alerta (2km)</span>
+              <span className="text-slate-700 dark:text-slate-300">Zona de Alerta (2km)</span>
             </div>
 
             <div className="flex items-center space-x-2 text-sm">
               <div className="w-4 h-4 rounded-full bg-blue-500 border border-blue-900 opacity-90" />
-              <span className="text-slate-700 font-medium">Reporte Vecinal</span>
+              <span className="text-slate-700 dark:text-slate-300 font-medium">Reporte Vecinal</span>
             </div>
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center space-x-2 text-sm">
-              <div className="w-3 h-3 rounded-full bg-emerald-500 border border-white shadow-sm" />
-              <span>Depósito Óptimo</span>
+              <div className="w-3 h-3 rounded-full bg-emerald-500 border border-white dark:border-slate-800 shadow-sm transition-colors" />
+              <span className="text-slate-700 dark:text-slate-300">Depósito Óptimo</span>
             </div>
             <div className="flex items-center space-x-2 text-sm">
-              <div className="w-3 h-3 rounded-full bg-amber-500 border border-white shadow-sm" />
-              <span>Riesgo Moderado</span>
+              <div className="w-3 h-3 rounded-full bg-amber-500 border border-white dark:border-slate-800 shadow-sm transition-colors" />
+              <span className="text-slate-700 dark:text-slate-300">Riesgo Moderado</span>
             </div>
             <div className="flex items-center space-x-2 text-sm">
-              <div className="w-3 h-3 rounded-full bg-red-500 border border-white shadow-sm" />
-              <span>Alerta por Arrastre</span>
+              <div className="w-3 h-3 rounded-full bg-red-500 border border-white dark:border-slate-800 shadow-sm transition-colors" />
+              <span className="text-slate-700 dark:text-slate-300">Alerta por Arrastre</span>
             </div>
           </div>
         </div>

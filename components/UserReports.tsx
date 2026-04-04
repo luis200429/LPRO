@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 
 import { 
@@ -57,7 +56,6 @@ const UserReports: React.FC<UserReportsProps> = ({ tanks }) => {
     }
   }, []);
 
-
   // 1. CARGAR los reportes al abrir la pantalla
   useEffect(() => {
     const fetchReportes = async () => {
@@ -75,7 +73,6 @@ const UserReports: React.FC<UserReportsProps> = ({ tanks }) => {
     };
     fetchReportes();
   }, []);
-
 
   const capturarUbicacion = () => {
     if (!navigator.geolocation) {
@@ -241,25 +238,25 @@ const UserReports: React.FC<UserReportsProps> = ({ tanks }) => {
 
   const getReportTypeLabel = (type: UserReport['type']) => {
     switch (type) {
-      case 'color': return { text: 'Color anómalo', color: 'bg-orange-100 text-orange-700' };
-      case 'smell': return { text: 'Olor extraño', color: 'bg-purple-100 text-purple-700' };
-      case 'taste': return { text: 'Mal sabor', color: 'bg-blue-100 text-blue-700' };
-      case 'leak': return { text: 'Posible fuga', color: 'bg-red-100 text-red-700' };
+      case 'color': return { text: 'Color anómalo', color: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400' };
+      case 'smell': return { text: 'Olor extraño', color: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400' };
+      case 'taste': return { text: 'Mal sabor', color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' };
+      case 'leak': return { text: 'Posible fuga', color: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' };
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <h2 className="text-xl font-bold text-slate-800">Reportes de la Comunidad</h2>
-          <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">
+          <h2 className="text-xl font-bold text-slate-800 dark:text-white transition-colors">Reportes de la Comunidad</h2>
+          <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-bold px-2 py-0.5 rounded-full transition-colors">
           {filteredReports.length} activos
           </span>
         </div>
         <button 
           onClick={() => setShowModal(true)}
-          className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
+          className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 dark:shadow-none"
         >
           <Plus className="w-5 h-5" />
           <span>Nuevo Reporte</span>
@@ -268,58 +265,57 @@ const UserReports: React.FC<UserReportsProps> = ({ tanks }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {/* Filters */}
-        {/* Filters */}
         <div className="md:col-span-1 space-y-4">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <h3 className="font-bold text-slate-800 mb-4 flex items-center">
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors duration-300">
+            <h3 className="font-bold text-slate-800 dark:text-white mb-4 flex items-center">
               <Filter className="w-4 h-4 mr-2" /> Filtros
             </h3>
             <div className="space-y-4">
               
               {/* Buscador */}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                 <input 
                   type="text" 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Buscar depósito..." 
-                  className="w-full bg-slate-50 border rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
                 />
               </div>
               
               {/* Gravedad */}
-              <div className="pt-2 border-t border-slate-100">
-                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Gravedad</label>
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-700 transition-colors">
+                <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase mb-2">Gravedad</label>
                 <div className="space-y-2">
-                  <label className="flex items-center space-x-2 text-sm text-slate-600 cursor-pointer">
+                  <label className="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer">
                     <input 
                       type="checkbox" 
                       checked={showHighSeverity}
                       onChange={(e) => setShowHighSeverity(e.target.checked)}
-                      className="rounded text-blue-600" 
+                      className="rounded text-blue-600 dark:bg-slate-900 dark:border-slate-600" 
                     />
                     <span>Alta (Fugas)</span>
                   </label>
-                  <label className="flex items-center space-x-2 text-sm text-slate-600 cursor-pointer">
+                  <label className="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer">
                     <input 
                       type="checkbox" 
                       checked={showMediumSeverity}
                       onChange={(e) => setShowMediumSeverity(e.target.checked)}
-                      className="rounded text-blue-600" 
+                      className="rounded text-blue-600 dark:bg-slate-900 dark:border-slate-600" 
                     />
                     <span>Media (Color/Olor)</span>
                   </label>
                 </div>
               </div>
 
-              {/* 🔥 NUEVO: Desplegable de Ordenación */}
-              <div className="pt-2 border-t border-slate-100">
-                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Ordenar por</label>
+              {/* Ordenación */}
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-700 transition-colors">
+                <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase mb-2">Ordenar por</label>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="w-full bg-slate-50 border rounded-lg px-3 py-2 text-sm text-slate-600 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer"
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-600 dark:text-slate-300 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer transition-colors"
                 >
                   <option value="recent">Más recientes primero</option>
                   <option value="votes">Más relevantes (Votos)</option>
@@ -336,38 +332,38 @@ const UserReports: React.FC<UserReportsProps> = ({ tanks }) => {
           {filteredReports.map((report) => (
             <div 
               key={report.id} 
-              className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:border-blue-200 transition-all group"
+              className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:border-blue-200 dark:hover:border-blue-500 transition-all duration-300 group"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center space-x-3">
-                <div className={`p-2 rounded-lg ${
+                <div className={`p-2 rounded-lg transition-colors ${
                     report.type === 'leak' 
-                      ? 'bg-red-100 text-red-500' 
+                      ? 'bg-red-100 dark:bg-red-900/30 text-red-500 dark:text-red-400' 
                       : report.type === 'color' || report.type === 'smell'
-                      ? 'bg-amber-100 text-amber-500'
-                      : 'bg-slate-100 text-slate-500'
+                      ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-500 dark:text-amber-400'
+                      : 'bg-slate-100 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400'
                   }`}>
                     <MessageCircle className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-slate-900">{report.userName}</h4>
-                    <div className="flex items-center text-xs text-slate-400">
+                    <h4 className="font-bold text-slate-900 dark:text-white">{report.userName}</h4>
+                    <div className="flex items-center text-xs text-slate-400 dark:text-slate-500">
                       <Clock className="w-3 h-3 mr-1" />
                       {new Date(report.timestamp).toLocaleString()}
                     </div>
                   </div>
                 </div>
-                <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getReportTypeLabel(report.type).color}`}>
+                <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors ${getReportTypeLabel(report.type).color}`}>
                   {getReportTypeLabel(report.type).text}
                 </div>
               </div>
 
-              <p className="text-slate-600 text-sm mb-4 leading-relaxed italic">
+              <p className="text-slate-600 dark:text-slate-300 text-sm mb-4 leading-relaxed italic">
                 "{report.description}"
               </p>
 
-              <div className="flex items-center justify-between pt-4 border-t mt-4">
-                <div className="flex items-center text-xs text-slate-500 max-w-[50%]">
+              <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700 mt-4 transition-colors">
+                <div className="flex items-center text-xs text-slate-500 dark:text-slate-400 max-w-[50%]">
                   <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
                   <span className="truncate">{report.tankId}</span>
                 </div>
@@ -381,8 +377,8 @@ const UserReports: React.FC<UserReportsProps> = ({ tanks }) => {
                         onClick={() => handleVote(report)}
                         className={`flex items-center space-x-1 px-3 py-1.5 rounded-lg transition-colors border active:scale-95 ${
                           yaVotado 
-                            ? 'bg-blue-100 text-blue-700 border-blue-200 cursor-default' // Estilo si YA ha votado
-                            : 'bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-blue-600 border-slate-200 hover:border-blue-200' // Estilo normal
+                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800 cursor-default' 
+                            : 'bg-slate-50 dark:bg-slate-700 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 border-slate-200 dark:border-slate-600 hover:border-blue-200 dark:hover:border-blue-500' 
                         }`}
                         title={yaVotado ? "Ya has validado esto" : "Confirmar que yo también veo esto"}
                       >
@@ -394,7 +390,7 @@ const UserReports: React.FC<UserReportsProps> = ({ tanks }) => {
 
                   <button 
                     onClick={() => handleResolve(report.id)}
-                    className="text-blue-600 text-xs font-bold hover:underline active:scale-95 transition-transform"
+                    className="text-blue-600 dark:text-blue-400 text-xs font-bold hover:underline active:scale-95 transition-transform"
                   >
                     Marcar resuelto
                   </button>
@@ -407,29 +403,28 @@ const UserReports: React.FC<UserReportsProps> = ({ tanks }) => {
 
       {/* Report Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
-          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b flex items-center justify-between">
-              <h3 className="text-xl font-bold flex items-center">
-                <AlertCircle className="w-6 h-6 mr-2 text-blue-600" />
-                Registrar Incidencia Vecinal
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-[100] p-4 backdrop-blur-sm transition-all">
+          <div className="bg-white dark:bg-slate-800 w-full max-w-lg rounded-3xl shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100 dark:border-slate-700">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between transition-colors">
+              <h3 className="text-xl font-bold flex items-center dark:text-white">
+                <AlertCircle className="w-6 h-6 mr-2 text-blue-600 dark:text-blue-400" />
+                Registrar Incidencia
               </h3>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
+              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
                 <CheckCircle className="w-6 h-6" />
               </button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               
-              {/* Nuevo: Nombre o Anónimo */}
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-bold text-slate-700">Tu Nombre</label>
-                  <label className="flex items-center space-x-2 text-sm text-slate-600 cursor-pointer">
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Tu Nombre</label>
+                  <label className="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-400 cursor-pointer">
                     <input 
                       type="checkbox" 
                       checked={newReport.isAnonymous}
                       onChange={e => setNewReport({...newReport, isAnonymous: e.target.checked})}
-                      className="rounded text-blue-600 focus:ring-blue-500" 
+                      className="rounded text-blue-600 dark:bg-slate-900 dark:border-slate-600 focus:ring-blue-500" 
                     />
                     <span>Publicar como anónimo</span>
                   </label>
@@ -440,7 +435,7 @@ const UserReports: React.FC<UserReportsProps> = ({ tanks }) => {
                     required={!newReport.isAnonymous}
                     value={newReport.userName}
                     onChange={e => setNewReport({...newReport, userName: e.target.value})}
-                    className="w-full bg-slate-50 border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                     placeholder="Ej: María Gómez"
                   />
                 )}
@@ -448,37 +443,36 @@ const UserReports: React.FC<UserReportsProps> = ({ tanks }) => {
 
               {/* Ubicación Manual + Botón GPS */}
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Ubicación del Problema</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Ubicación del Problema</label>
                 <div className="flex space-x-2">
                   <input 
                     type="text" 
                     required
                     value={newReport.ubicacion}
                     onChange={e => setNewReport({...newReport, ubicacion: e.target.value})}
-                    className="flex-1 bg-slate-50 border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                    className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                     placeholder="Ej: Depósito de San Andrés..."
                   />
                   <button
                     type="button"
                     onClick={capturarUbicacion}
-                    className="bg-blue-50 p-3 rounded-xl border border-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors flex items-center justify-center shadow-sm"
+                    className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-xl border border-blue-100 dark:border-blue-800/50 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white transition-colors flex items-center justify-center shadow-sm"
                     title="Usar mi ubicación GPS actual"
                   >
                     <MapPin className="w-6 h-6" />
                   </button>
                 </div>
-                {/* Feedback visual chulo si tenemos coordenadas */}
                 {newReport.lat && (
-                  <p className="text-xs text-emerald-600 mt-2 font-bold flex items-center">
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2 font-bold flex items-center">
                     <CheckCircle className="w-3 h-3 mr-1" /> 
                     Coordenadas GPS listas para el mapa
                   </p>
                 )}
               </div>
 
-              {/* Se mantienen los tipos de problema */}
+              {/* Tipos de problema */}
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Tipo de Problema</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Tipo de Problema</label>
                 <div className="grid grid-cols-2 gap-3">
                   {['color', 'smell', 'taste', 'leak'].map((type) => (
                     <button
@@ -487,8 +481,8 @@ const UserReports: React.FC<UserReportsProps> = ({ tanks }) => {
                       onClick={() => setNewReport({...newReport, type: type as any})}
                       className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
                         newReport.type === type 
-                        ? 'bg-blue-600 border-blue-600 text-white shadow-md' 
-                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-md dark:shadow-none' 
+                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                       }`}
                     >
                       {getReportTypeLabel(type as any).text}
@@ -497,13 +491,13 @@ const UserReports: React.FC<UserReportsProps> = ({ tanks }) => {
                 </div>
               </div>
 
-              {/* Se mantiene la descripción */}
+              {/* Descripción */}
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Descripción (Opcional)</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Descripción (Opcional)</label>
                 <textarea 
                   value={newReport.description}
                   onChange={e => setNewReport({...newReport, description: e.target.value})}
-                  className="w-full bg-slate-50 border rounded-xl px-4 py-3 h-32 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 h-32 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                   placeholder="Detalla lo que has observado (opcional)..."
                 />
               </div>
@@ -512,7 +506,7 @@ const UserReports: React.FC<UserReportsProps> = ({ tanks }) => {
               <button 
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 flex items-center justify-center space-x-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 dark:shadow-none flex items-center justify-center space-x-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
                   <>
