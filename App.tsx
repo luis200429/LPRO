@@ -45,21 +45,20 @@ const MainApp: React.FC = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading,   setIsLoading]   = useState(true);
   const [menuOpen,    setMenuOpen]    = useState(false);
-  const [isDark,      setIsDark]      = useState(false);
 
-  // ── Efectos ───────────────────────────────────────────────────────────────
+  // 1. Inicializamos leyendo la memoria del navegador. Si dice 'dark', arranca en oscuro.
+  const [isDark, setIsDark] = useState(() => {
+    return localStorage.getItem('theme') === 'dark';
+  });
 
-  // Fuerza modo claro al montar (ignora preferencia del sistema)
-  useEffect(() => {
-    document.documentElement.classList.remove('dark');
-  }, []);
-
-  // Aplica/quita la clase dark al cambiar isDark
+  // 2. Cada vez que cambias el modo, aplicamos la clase y guardamos la elección
   useEffect(() => {
     if (isDark) {
       document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark'); // Guardamos la preferencia
     } else {
       document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light'); // Guardamos la preferencia
     }
   }, [isDark]);
 
