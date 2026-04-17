@@ -1,7 +1,17 @@
 @import "tailwindcss";
-
-/* 1. Nos aseguramos de que escanee toda tu carpeta raíz y componentes */
 @source "./";
+@custom-variant dark (&:where(.dark, .dark *));
 
-/* 2. La regla definitiva para el modo oscuro en Tailwind v4 */
-@custom-variant dark (.dark &);
+/* Scroll suave en iOS */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}

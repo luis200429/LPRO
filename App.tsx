@@ -152,8 +152,7 @@ const MainApp: React.FC = () => {
       {/* ═══════════════════════════════════════════════════════
           HEADER — grid de 3 columnas: logo | nav | acciones
       ═══════════════════════════════════════════════════════ */}
-      <header className="h-20 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 md:px-10 grid grid-cols-3 items-center shadow-sm z-30 flex-shrink-0">
-
+        <header className="h-20 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 md:px-10 grid grid-cols-2 md:grid-cols-3 items-center shadow-sm z-30 flex-shrink-0">  
         {/* COL 1 — Logo + título */}
         <div className="flex items-center space-x-3">
           <Link to="/" className="flex items-center hover:opacity-80 active:scale-95 transition-all">
@@ -319,7 +318,7 @@ const MainApp: React.FC = () => {
       {/* ═══════════════════════════════════════════════
           CONTENIDO PRINCIPAL
       ═══════════════════════════════════════════════ */}
-      <main className={`flex-1 overflow-y-auto ${
+      <main className={`flex-1 overflow-y-auto overscroll-y-contain ${
         location.pathname === '/chat' ? 'p-0' : 'p-4 md:p-8'
       }`}>
         <Routes>

@@ -20,6 +20,24 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ tanks, messages, setMessages })
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // 1. EL TRUCO DEFINITIVO: Bloquear el scroll de toda la página
+  useEffect(() => {
+    // Guardamos los estilos originales por si acaso
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+
+    // Forzamos a que la ventana principal sea estática e inamovible
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    return () => {
+      // Restauramos el scroll si el usuario cambia de pestaña
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+    };
+  }, []);
+
+  // 2. Mantener el scroll ABAJO solo en la caja de mensajes
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -66,10 +84,10 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ tanks, messages, setMessages })
 
   return (
     <div
-    className="flex flex-col bg-white dark:bg-slate-900 overflow-hidden transition-colors duration-300"
-    style={{ height: 'calc(100vh - 4rem)' }}
+      className="flex flex-col bg-white dark:bg-slate-900 overflow-hidden overscroll-none"
+      style={{ height: 'calc(100dvh - 4rem)' }} 
     >
-      {/* Header */}
+      {/* Header Local del Chat */}
       <div className="px-4 py-3 md:px-6 md:py-4 bg-blue-600 dark:bg-blue-800 text-white flex items-center justify-between flex-shrink-0 transition-colors duration-300">
         <div className="flex items-center space-x-3">
           <div className="bg-blue-400 dark:bg-blue-600 p-2 rounded-xl transition-colors">
@@ -84,7 +102,7 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ tanks, messages, setMessages })
         </div>
       </div>
 
-      {/* Mensajes */}
+      {/* Caja de Mensajes (Esta es la ÚNICA parte que hace scroll gracias a flex-1 y overflow-y-auto) */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>

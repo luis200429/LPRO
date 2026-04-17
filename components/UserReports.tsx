@@ -27,6 +27,7 @@ const UserReports: React.FC<UserReportsProps> = ({ tanks }) => {
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [newReport, setNewReport] = useState({
     ubicacion: '', 
     userName: '',
@@ -97,10 +98,12 @@ const UserReports: React.FC<UserReportsProps> = ({ tanks }) => {
   };
 
   // 2. ENVIAR el reporte a la base de datos 
+ // 2. ENVIAR el reporte a la base de datos 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return; // ← cortocircuito si ya está enviando
-    setIsSubmitting(true);    // ← bloqueamos
+    if (isSubmitting) return; 
+    setIsSubmitting(true);    
+    setErrorMessage(null); // Limpiamos errores previos al reintentar
   
     const finalUserName = newReport.isAnonymous || !newReport.userName.trim() 
       ? 'Usuario Anónimo' 
@@ -137,13 +140,24 @@ const UserReports: React.FC<UserReportsProps> = ({ tanks }) => {
         setShowModal(false);
         setNewReport({ ubicacion: '', userName: '', isAnonymous: false, type: 'color', description: '', lat: null, lng: null });
       } else {
-        alert("Error al guardar el reporte");
+        // --- AQUÍ CAPTURAMOS EL RECHAZO DEL TROLL ---
+        try {
+          const errorData = await response.json();
+          // Si el backend nos mandó un motivo, lo mostramos
+          if (errorData.motivo) {
+            setErrorMessage(`Reporte rechazado: ${errorData.motivo}`);
+          } else {
+            setErrorMessage(errorData.error || "Error al guardar el reporte.");
+          }
+        } catch (parseError) {
+          setErrorMessage("Error de conexión. Inténtalo de nuevo.");
+        }
       }
     } catch (error) {
       console.error("Error enviando reporte:", error);
-      alert("Error de conexión al guardar el reporte");
+      setErrorMessage("Error de red al conectar con el servidor.");
     } finally {
-      setIsSubmitting(false); // ← desbloqueamos siempre, tanto si va bien como si falla
+      setIsSubmitting(false); 
     }
   };
 
@@ -246,7 +260,8 @@ const UserReports: React.FC<UserReportsProps> = ({ tanks }) => {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    // EL TRUCO ESTÁ AQUÍ ABAJO: Añadimos pb-28 (padding-bottom) para dar espacio al final de la página
+    <div className="space-y-6 animate-in fade-in duration-500 pb-28">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <h2 className="text-xl font-bold text-slate-800 dark:text-white transition-colors">Reportes de la Comunidad</h2>

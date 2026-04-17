@@ -64,8 +64,8 @@ const Dashboard: React.FC<DashboardProps> = ({ tanks, onSelectTank }) => {
   }
 
   return (
-      <div className="space-y-6">
-      {/* Stats Summary - AJUSTADO A 2 COLUMNAS COMO PEDISTE */}
+      <div className="space-y-6 pb-28">
+        {/* Stats Summary - AJUSTADO A 2 COLUMNAS COMO PEDISTE */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-transparent dark:border-slate-700 shadow-sm flex items-center space-x-4 transition-colors duration-300">
           <div className="p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl flex-shrink-0">

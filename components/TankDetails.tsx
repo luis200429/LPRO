@@ -66,7 +66,7 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-10">
+    <div className="space-y-8 animate-in fade-in duration-500 pb-28">
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
