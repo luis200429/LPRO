@@ -119,11 +119,28 @@ const Dashboard: React.FC<DashboardProps> = ({ tanks, onSelectTank }) => {
           
           const dbData = tank.history && tank.history.length > 0 ? tank.history[0] : null;
 
-          const rawIca = dbData 
-            ? (dbData.ica ?? dbData.ica ?? dbData.ica ?? 0) 
-            : (tank.lastReading.ica ?? tank.lastReading.ica ?? tank.lastReading.ica ?? 0);
+         // --- NUEVO CÁLCULO DE ICA A PRUEBA DE BALAS ---
+         let bestIca = 0;
 
-          const safeIca = Number(rawIca);
+         if (tank.history && tank.history.length > 0) {
+           // Busca hacia atrás en el historial la primera fila que tenga un ICA mayor que 0
+           const rowWithIca = tank.history.find((row: any) => {
+             const val = Number(row.ica || row.ica_value || row.ICA || row.Ica || 0);
+             return !isNaN(val) && val > 0;
+           });
+
+           if (rowWithIca) {
+             bestIca = Number(rowWithIca.ica);
+           }
+         }
+
+         // Si el historial no tiene nada, miramos en los datos de último recurso
+         if (bestIca === 0) {
+           bestIca = Number(tank.lastReading?.ica || 0);
+         }
+
+         const safeIca = bestIca;
+         // ----------------------------------------------
           
           const currentReading = dbData ? {
             turbidity: dbData.turbidity,
@@ -131,7 +148,7 @@ const Dashboard: React.FC<DashboardProps> = ({ tanks, onSelectTank }) => {
             conductivity: dbData.conductivity,
             level: dbData.water_level,
             temperature: dbData.temperature,
-            Ica: dbData.ica || 0, 
+            Ica: dbData.ica || safeIca || 0, 
             timestamp: String(dbData.timestamp).length === 10 ? dbData.timestamp * 1000 : dbData.timestamp
           } : {
             turbidity: tank.lastReading.turbidity,
@@ -139,7 +156,7 @@ const Dashboard: React.FC<DashboardProps> = ({ tanks, onSelectTank }) => {
             conductivity: tank.lastReading.conductivity,
             level: tank.lastReading.level,
             temperature: tank.lastReading.temperature,
-            Ica: tank.lastReading.ica || tank.lastReading.ica || 0, // 🔥 Capturamos el Ica
+            Ica: tank.lastReading.ica || tank.lastReading.ica || safeIca || 0, // 🔥 Capturamos el Ica
             timestamp: String(tank.lastReading.timestamp).length === 10 ? Number(tank.lastReading.timestamp) * 1000 : tank.lastReading.timestamp
           };
 

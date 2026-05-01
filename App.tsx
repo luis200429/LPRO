@@ -17,7 +17,7 @@ import NotificationBell from './components/NotificationBell';
 import logo from './fotos/logo.png';
 import logoDark from './fotos/logo-dark.png'; 
 
-const BACKEND_URL = '';
+const BACKEND_URL = 'http://localhost:3002'
 
 // ── TankDetailsWrapper fuera de MainApp ──────────────────────────────────────
 interface TankDetailsWrapperProps {
@@ -70,35 +70,57 @@ const MainApp: React.FC = () => {
           MOCK_TANKS.map(async (tank) => {
             try {
               const response = await fetch(`${BACKEND_URL}/api/historico/${tank.id}`);
+              
               if (response.ok) {
                 const historicoRaw = await response.json();
-                console.log(`[${tank.id}] Datos recibidos:`, historicoRaw.length, 'primer item:', historicoRaw[0]);
-                const historico = historicoRaw.map((item: any) => ({
-                  ...item,
-                  timestamp: item._time || item.timestamp,
-                  ica: item.ica || item.Ica || 0
-                }));
-                const sortedHistorico = historico.sort((a: any, b: any) =>
-                  new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-                );
-                const lecturaMasReciente = sortedHistorico.length > 0 ? sortedHistorico[0] : tank.lastReading;
-                let status: 'optimal' | 'warning' | 'critical' = 'optimal';
-                if (lecturaMasReciente.ica < 50) status = 'critical';
-                else if (lecturaMasReciente.ica < 70) status = 'warning';
-                return { ...tank, status, lastReading: lecturaMasReciente, history: sortedHistorico };
+                
+                if (historicoRaw.length > 0) {
+                  const historico = historicoRaw
+                  .filter((item: any) => item.ph !== undefined || item.turbidity !== undefined)
+                  .map((item: any) => ({
+                    ...item,
+                    timestamp: item._time || item.timestamp,
+                    ica: item.ica || item.ica_value || item.Ica || 0
+                  }));
+                  
+                  const sortedHistorico = historico.sort((a: any, b: any) =>
+                    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+                  );
+                  
+                  // Usamos SIEMPRE el real de la BD
+                  const lecturaMasReciente = sortedHistorico[0]; 
+                  
+                  let status: 'optimal' | 'warning' | 'critical' = 'optimal';
+                  if (lecturaMasReciente.ica < 50) status = 'critical';
+                  else if (lecturaMasReciente.ica < 70) status = 'warning';
+                  
+                  return { ...tank, status, lastReading: lecturaMasReciente, history: sortedHistorico };
+                } else {
+                  // Si la BD está vacía, mostramos todo a 0 para no confundir con MOCKS
+                  console.warn(`⚠️ Sin datos en InfluxDB para ${tank.id}.`);
+                  const zeroReading = { turbidity: 0, ph: 0, conductivity: 0, level: 0, temperature: 0, ica: 0, timestamp: Date.now() };
+                  return { ...tank, status: 'critical', lastReading: zeroReading, history: [] };
+                }
+              } else {
+                console.error(`Error HTTP ${response.status} en tanque ${tank.id}`);
               }
             } catch (err) {
-              console.error(`❌ Error cargando el tanque ${tank.id}:`, err);
+              console.error(`❌ Error de RED cargando el tanque ${tank.id}:`, err);
             }
-            return tank;
+            
+            // Si todo falla dramáticamente, devolvemos el tanque con ceros para evidenciar el error de red
+            const errorReading = { turbidity: 0, ph: 0, conductivity: 0, level: 0, temperature: 0, ica: 0, timestamp: Date.now() };
+            return { ...tank, status: 'critical', lastReading: errorReading, history: [] };
           })
         );
-        setTanks(updatedTanks);
+        setTanks(updatedTanks as WaterTank[]);
         setIsLoading(false);
       } catch (error) {
         console.error('❌ Error global en la carga inicial:', error);
+        setIsLoading(false);
       }
     };
+    
     fetchInitialData();
   }, []);
 
