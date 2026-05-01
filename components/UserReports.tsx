@@ -505,7 +505,6 @@ const UserReports: React.FC<UserReportsProps> = ({ tanks }) => {
                   ))}
                 </div>
               </div>
-
               {/* Descripción */}
               <div>
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Descripción (Opcional)</label>
@@ -516,6 +515,14 @@ const UserReports: React.FC<UserReportsProps> = ({ tanks }) => {
                   placeholder="Detalla lo que has observado (opcional)..."
                 />
               </div>
+
+              {/* --- MENSAJE DE ERROR (FILTRO ANTI-TROLL) --- */}
+              {errorMessage && (
+                <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 p-3 rounded-xl text-sm flex items-start space-x-3 animate-in fade-in zoom-in-95 duration-300 mt-4">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <span>{errorMessage}</span>
+                </div>
+              )}
 
               <div className="pt-2">
               <button 

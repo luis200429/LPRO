@@ -50,6 +50,38 @@ export const MOCK_TANKS: WaterTank[] = [
       timestamp: new Date().toISOString()
     },
     history: []
+  },
+  {
+    id: 'cm_rua',
+    name: 'Comunidad de Baiona',
+    location: { lat: 42.0712, lng: -8.5100, address: 'Baiona' },
+    status: 'critical',
+    lastReading: {
+      turbidity: 0,
+      ph: 0,
+      conductivity: 0,
+      temperature: 0,
+      level: 0,
+      battery: 0,
+      timestamp: new Date().toISOString()
+    },
+    history: []
+  },
+  {
+    id: 'cm_rua4',
+    name: 'Comunidad de A Rúa de Valdeorras',
+    location: { lat: 42.393714, lng: -7.123255, address: 'A Rúa' },
+    status: 'critical',
+    lastReading: {
+      turbidity: 0,
+      ph: 0,
+      conductivity: 0,
+      temperature: 0,
+      level: 0,
+      battery: 0,
+      timestamp: new Date().toISOString()
+    },
+    history: []
   }
 ];
 

@@ -72,6 +72,7 @@ const MainApp: React.FC = () => {
               const response = await fetch(`${BACKEND_URL}/api/historico/${tank.id}`);
               if (response.ok) {
                 const historicoRaw = await response.json();
+                console.log(`[${tank.id}] Datos recibidos:`, historicoRaw.length, 'primer item:', historicoRaw[0]);
                 const historico = historicoRaw.map((item: any) => ({
                   ...item,
                   timestamp: item._time || item.timestamp,
@@ -100,6 +101,8 @@ const MainApp: React.FC = () => {
     };
     fetchInitialData();
   }, []);
+
+  
 
   // Socket.io tiempo real
   useEffect(() => {

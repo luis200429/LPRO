@@ -14,6 +14,8 @@ const GRAFANA_DASHBOARDS: Record<string, { id: string, slug: string }> = {
   'cm_zamans': { id: 'ad9rthz', slug: 'augacalidade-zamans' },
   'cm_alba': { id: 'adw87hp', slug: 'augacalidade-alba' }, 
   'cm_vincios': { id: 'adqh2j2', slug: 'augacalidade-vincios' },
+  'cm_rua': { id: '25aed498-36a7-4f8e-85ef-fe508318e804', slug: 'augacalidade-a-rua' },
+  'cm_rua4': { id: 'adab9ddb-8ea0-4fed-8efd-3446d8eddc8a', slug: 'augacalidade-a-rua-4' }
 };
 
 type FilterMode = '24h' | '7d' | '30d' | 'custom';
@@ -42,8 +44,9 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
     return `${GRAFANA_BASE_URL}/d-solo/${dashboardInfo.id}/${dashboardInfo.slug}?orgId=1&from=${from}&to=${to}&timezone=browser&lang=es&panelId=${panelId}&__feature.dashboardSceneSolo=true`;
   }
   
-  const currentLevel = tank.lastReading?.level || tank.lastReading?.level || 0;
-
+ // const currentLevel = tank.lastReading?.level || tank.lastReading?.level || 0;
+ const currentLevel = (tank.lastReading as any)?.water_level || 0;
+  
   // 🔥 ICA LIMPIO Y SEGURO: Lo forzamos a Número y confiamos en 'ica'
   const currentIca = Number(tank.lastReading?.ica) || 0;
   
@@ -214,7 +217,7 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
             {/* GRÁFICA 5: CONDUCTIVIDAD/TDS (panel-4) */}
             <div className="bg-white dark:bg-slate-800 p-2 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden transition-colors duration-300">
               <h3 className="p-4 font-bold text-slate-800 dark:text-white flex items-center">
-                <Zap className="w-5 h-5 mr-2 text-yellow-500 dark:text-yellow-400" /> Conductividad y TDS
+                <Zap className="w-5 h-5 mr-2 text-yellow-500 dark:text-yellow-400" /> Conductividad(TDS)
               </h3>
               <div className="h-[300px] w-full bg-slate-50 dark:bg-slate-900/50 rounded-b-2xl overflow-hidden">
                 <iframe 
@@ -224,6 +227,22 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
                 </iframe>
               </div>
             </div>
+
+            <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
+
+            {/* GRÁFICA 6: NIVEL DE AGUA */}
+            <div className="bg-white dark:bg-slate-800 p-2 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden transition-colors duration-300">
+            <h3 className="p-4 font-bold text-slate-800 dark:text-white flex items-center">
+              <Droplet className="w-5 h-5 mr-2 text-cyan-500 dark:text-cyan-400" /> Histórico Nivel de Agua
+            </h3>
+            <div className="h-[300px] w-full bg-slate-50 dark:bg-slate-900/50 rounded-b-2xl overflow-hidden">
+              <iframe 
+                key={getGrafanaUrl('14')} 
+                src={getGrafanaUrl('14')} 
+                width="100%" height="100%" frameBorder="0" title="Nivel de Agua">
+              </iframe>
+            </div>
+          </div>
 
           </div>
         </div>
