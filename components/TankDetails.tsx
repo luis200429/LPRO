@@ -15,7 +15,8 @@ const GRAFANA_DASHBOARDS: Record<string, { id: string, slug: string }> = {
   'cm_alba': { id: 'adw87hp', slug: 'augacalidade-alba' }, 
   'cm_vincios': { id: 'adqh2j2', slug: 'augacalidade-vincios' },
   'cm_rua': { id: '25aed498-36a7-4f8e-85ef-fe508318e804', slug: 'augacalidade-a-rua' },
-  'cm_rua4': { id: 'adab9ddb-8ea0-4fed-8efd-3446d8eddc8a', slug: 'augacalidade-a-rua-4' }
+  'cm_rua4': { id: 'adab9ddb-8ea0-4fed-8efd-3446d8eddc8a', slug: 'augacalidade-a-rua-4' },
+  'cm_lpro': { id: 'augacalidade-lpro-days', slug: 'augacalidade-lpro-days' }
 };
 
 type FilterMode = '24h' | '7d' | '30d' | 'custom';
@@ -99,6 +100,10 @@ const TankDetails: React.FC<TankDetailsProps> = ({ tank, onBack }) => {
               <div className="flex justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-2xl text-slate-700 dark:text-slate-300 transition-colors">
                 <span className="flex items-center gap-2"><Gauge size={18} className="text-slate-400 dark:text-slate-500"/> Turbidez</span>
                 <b className="dark:text-white">{tank.lastReading?.turbidity || 0} NTU</b>
+              </div>
+              <div className="flex justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-2xl text-slate-700 dark:text-slate-300 transition-colors">
+                <span className="flex items-center gap-2"><Zap size={18} className="text-slate-400 dark:text-slate-500"/> Conductividad</span>
+                <b className="dark:text-white">{tank.lastReading?.conductivity || 0} ppm</b>
               </div>
               <div className="flex justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-2xl text-slate-700 dark:text-slate-300 transition-colors">
                 <span className="flex items-center gap-2"><Activity size={18} className="text-slate-400 dark:text-slate-500"/> pH</span>

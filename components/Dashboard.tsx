@@ -184,7 +184,7 @@ const Dashboard: React.FC<DashboardProps> = ({ tanks, onSelectTank }) => {
 
                 <div className="grid grid-cols-2 gap-4">
                   
-                  {/* CAJA: Ica (NUEVA) */}
+                  {/* 1. CAJA: ICA (Ocupa 2 en móvil, 1 en PC) */}
                   <div className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-xl col-span-2 sm:col-span-1 transition-colors">
                     <div className="flex items-center space-x-2 text-slate-500 dark:text-slate-400 mb-1">
                       <Activity className="w-4 h-4 text-blue-500 dark:text-blue-400" />
@@ -195,6 +195,7 @@ const Dashboard: React.FC<DashboardProps> = ({ tanks, onSelectTank }) => {
                     </p>
                   </div>
 
+                  {/* 2. CAJA: TURBIDEZ */}
                   <div className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-xl transition-colors">
                     <div className="flex items-center space-x-2 text-slate-500 dark:text-slate-400 mb-1">
                       <Wind className="w-4 h-4" />
@@ -202,6 +203,8 @@ const Dashboard: React.FC<DashboardProps> = ({ tanks, onSelectTank }) => {
                     </div>
                     <p className="text-lg font-bold text-slate-900 dark:text-white">{currentReading.turbidity} NTU</p>
                   </div>
+
+                  {/* 3. CAJA: pH */}
                   <div className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-xl transition-colors">
                     <div className="flex items-center space-x-2 text-slate-500 dark:text-slate-400 mb-1">
                       <Droplets className="w-4 h-4" />
@@ -210,7 +213,7 @@ const Dashboard: React.FC<DashboardProps> = ({ tanks, onSelectTank }) => {
                     <p className="text-lg font-bold text-slate-900 dark:text-white">{currentReading.ph}</p>
                   </div>
                   
-                  {/* CAJA: CONDUCTIVIDAD */}
+                  {/* 4. CAJA: CONDUCTIVIDAD */}
                   <div className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-xl transition-colors">
                     <div className="flex items-center space-x-2 text-slate-500 dark:text-slate-400 mb-1">
                       <Activity className="w-4 h-4" />
@@ -219,7 +222,17 @@ const Dashboard: React.FC<DashboardProps> = ({ tanks, onSelectTank }) => {
                     <p className="text-lg font-bold text-slate-900 dark:text-white">{currentReading.conductivity} µS</p>
                   </div>
 
+                  {/* 5. CAJA: TEMPERATURA (Movida aquí arriba para hacer pareja) */}
                   <div className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-xl transition-colors">
+                    <div className="flex items-center space-x-2 text-slate-500 dark:text-slate-400 mb-1">
+                      <Thermometer className="w-4 h-4" />
+                      <span className="text-xs">Temp.</span>
+                    </div>
+                    <p className="text-lg font-bold text-slate-900 dark:text-white">{currentReading.temperature}°C</p>
+                  </div>
+
+                  {/* 6. CAJA: NIVEL (Movida al final y con col-span-2 para ocupar todo el ancho en móvil) */}
+                  <div className="col-span-2 sm:col-span-1 bg-slate-50 dark:bg-slate-700/50 p-3 rounded-xl transition-colors">
                     <div className="flex items-center space-x-2 text-slate-500 dark:text-slate-400 mb-1">
                       <Waves className="w-4 h-4" />
                       <span className="text-xs">Nivel</span>
@@ -234,15 +247,10 @@ const Dashboard: React.FC<DashboardProps> = ({ tanks, onSelectTank }) => {
                       </div>
                     </div>
                   </div>
-                  <div className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-xl transition-colors">
-                    <div className="flex items-center space-x-2 text-slate-500 dark:text-slate-400 mb-1">
-                      <Thermometer className="w-4 h-4" />
-                      <span className="text-xs">Temp.</span>
-                    </div>
-                    <p className="text-lg font-bold text-slate-900 dark:text-white">{currentReading.temperature}°C</p>
-                  </div>
+
                 </div>
-              </div>
+
+                </div>
               
               <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between transition-colors">
               <span className="text-xs text-slate-400 dark:text-slate-500">

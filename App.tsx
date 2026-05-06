@@ -17,7 +17,7 @@ import NotificationBell from './components/NotificationBell';
 import logo from './fotos/logo.png';
 import logoDark from './fotos/logo-dark.png'; 
 
-const BACKEND_URL = 'http://localhost:3002'
+const BACKEND_URL = 'https://augacalidade.duckdns.org'
 
 // ── TankDetailsWrapper fuera de MainApp ──────────────────────────────────────
 interface TankDetailsWrapperProps {
